@@ -1,0 +1,108 @@
+# This example config is for a desktop computer.
+
+# CPU has 24 threads. Show them in four columns of six threads each.
+cpus:
+  cols: 4
+
+
+# Sensors are read using the hwmon sysfs interface. Every hwmon device has a corresponding device name.
+# So define some hwmon devices corresponding to the device names.
+#
+# Each entry here corresponds to a path under `/sys/class/hwmon`. The `dev_name` is the value of `/sys/class/hwmon/hwmon*/name`
+hwmon:
+  # Define an hwmon named "cpu1" corresponding to the real hwmon device with name "k10temp"
+  cpu1:
+    dev_name: 'k10temp'
+
+  # Define an hwmon named "cpu2" corresponding to the real hwmon device with name "k10temp".
+  # There are two such devices because this is a Threadripper CPU, so there's one for each core.
+  #
+  # Even though this has the same device name as the previous "cpu1" hwmon, `hwtop` will ensure it doesn't
+  # map both hwmons to the same device.
+  cpu2:
+    dev_name: 'k10temp'
+
+  # Define an hwmon named "gpu" for the device named "amdgpu"
+  gpu:
+    dev_name: 'amdgpu'
+
+  # Define an hwmon named "mobo" for the device named "nct6779"
+  mobo:
+    dev_name: 'nct6779'
+
+# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors, and is rendered on one line.
+#
+# Sensor groups allow you to group sensors from multiple hwmon devices into one logical group.
+sensors:
+  # The first group is for the CPU. It includes the CPU's own temp sensors, the motherboard's temp sensor for the CPU,
+  # and the motherboard's fan sensor for the CPU fan.
+- name: 'CPU'
+  temps:
+    # This is a temp sensor under the hwmon named "cpu1" and is temp sensor number 1 in that device.
+    # For example, if that device had the path `/sys/class/hwmon/hwmon1`, then this sensor's value is read from
+    # `/sys/class/hwmon/hwmon1/temp1_input`
+    #
+    # Sensors are automatically named after the corresponding label file in the hwmon device, if available
+    # (eg `temp1_label` for temp sensor number 1, or `fan2_label` for fan sensor number 2).
+    # This name can be overriden by setting the `name` property of the sensor.
+    # Here, the `name` property is set on these sensors because the hwmon driver doesn't have labels for them.
+  - hwmon: 'cpu1'
+    num: 1
+    name: 'CPU 1'
+  - hwmon: 'cpu2'
+    num: 1
+    name: 'CPU 2'
+    # This is a temp sensor under the hwmon named "mobo" and is temp sensor number 7 in that device.
+    # For example, if that device had the path `/sys/class/hwmon/hwmon0`, then this sensor's value is read from
+    # `/sys/class/hwmon/hwmon0/temp7_input`. Furthermore, a static offset of -27.0 is applied to this sensor's value
+    # before it's displayed (because this is a Threadripper 2 CPU).
+  - hwmon: 'mobo'
+    num: 7
+    offset: -27.0
+  fans:
+    # This is a fan sensor under the hwmon named "mobo" and is fan sensor number 2 in that device.
+    # For example, if that device had the path `/sys/class/hwmon/hwmon0`, then this sensor's value is read from
+    # `/sys/class/hwmon/hwmon0/fan2_input`
+  - hwmon: 'mobo'
+    num: 2
+    name: 'Fan 1'
+
+  # The second sensor group is for the GPU.
+- name: 'GPU'
+  temps:
+  - hwmon: 'gpu'
+    num: 1
+  - hwmon: 'gpu'
+    num: 2
+  - hwmon: 'gpu'
+    num: 3
+  fans:
+  - hwmon: 'gpu'
+    num: 1
+
+  # The third sensor group is for the motherboard.
+- name: 'Mobo'
+  temps:
+  - hwmon: 'mobo'
+    num: 1
+  - hwmon: 'mobo'
+    num: 4
+  - hwmon: 'mobo'
+    num: 5
+  - hwmon: 'mobo'
+    num: 6
+  fans:
+    # Here, the `name` property is set on these fan sensors to identify which chassis fans they correspond to.
+  - hwmon: 'mobo'
+    num: 1
+    name: 'Front'
+  - hwmon: 'mobo'
+    num: 4
+    name: 'Side'
+  - hwmon: 'mobo'
+    num: 5
+    name: 'Rear'
+
+# Monitor usage of the network device named `enp4s0`
+networks:
+- 'enp4s0'
