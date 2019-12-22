@@ -236,33 +236,41 @@ fn print_network<W>(mut writer: W, name: &str, network: hwmon::Network, previous
 	}
 
 	#[allow(clippy::cast_precision_loss)]
-	let rx_speed = (network.rx - previous.rx) as f64 / (network.now.duration_since(previous.now).as_millis() as f64 / 1000.);
+	let rx_speed = (network.rx - previous.rx) as f64 / (network.now.duration_since(previous.now).as_millis() as f64 / 1000.) * 8.;
 	if rx_speed < 1_000. {
-		write!(writer, "{:6.0}", rx_speed)?;
-		writer.write_all(b" B/s down   ")?;
+		write!(writer, "{:3.0}", rx_speed)?;
+		writer.write_all(b"    b/s down   ")?;
 	}
 	else if rx_speed < 1_000_000. {
 		write!(writer, "{:5.1}", rx_speed / 1_000.)?;
-		writer.write_all(b" KB/s down   ")?;
+		writer.write_all(b" Kb/s down   ")?;
+	}
+	else if rx_speed < 1_000_000_000. {
+		write!(writer, "{:5.1}", rx_speed / 1_000_000.)?;
+		writer.write_all(b" Mb/s down   ")?;
 	}
 	else {
-		write!(writer, "{:5.1}", rx_speed / 1_000_000.)?;
-		writer.write_all(b" MB/s down   ")?;
+		write!(writer, "{:5.1}", rx_speed / 1_000_000_000.)?;
+		writer.write_all(b" Gb/s down   ")?;
 	}
 
 	#[allow(clippy::cast_precision_loss)]
-	let tx_speed = (network.tx - previous.tx) as f64 / (network.now.duration_since(previous.now).as_millis() as f64 / 1000.);
+	let tx_speed = (network.tx - previous.tx) as f64 / (network.now.duration_since(previous.now).as_millis() as f64 / 1000.) * 8.;
 	if tx_speed < 1_000. {
-		write!(writer, "{:6.0}", tx_speed)?;
-		writer.write_all(b" B/s up")?;
+		write!(writer, "{:3.0}", tx_speed)?;
+		writer.write_all(b"    b/s up")?;
 	}
 	else if tx_speed < 1_000_000. {
 		write!(writer, "{:5.1}", tx_speed / 1_000.)?;
-		writer.write_all(b" KB/s up")?;
+		writer.write_all(b" Kb/s up")?;
+	}
+	else if tx_speed < 1_000_000_000. {
+		write!(writer, "{:5.1}", tx_speed / 1_000_000.)?;
+		writer.write_all(b" Mb/s up")?;
 	}
 	else {
-		write!(writer, "{:5.1}", tx_speed / 1_000_000.)?;
-		writer.write_all(b" MB/s up")?;
+		write!(writer, "{:5.1}", tx_speed / 1_000_000_000.)?;
+		writer.write_all(b" Gb/s up")?;
 	}
 
 	Ok(())
