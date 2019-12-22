@@ -212,13 +212,13 @@ fn print_cpu<W>(mut writer: W, id_and_frequency: Option<(usize, f32)>, cpu: hwmo
 	writer.write_all(b"% ")?;
 
 	if let Some((_, frequency)) = id_and_frequency {
-		if frequency > 1000. {
-			write!(writer, "{:5.3}", frequency / 1000.)?;
-			writer.write_all(b" GHz")?;
-		}
-		else {
+		if frequency < 999.95 {
 			write!(writer, "{:5.1}", frequency)?;
 			writer.write_all(b" MHz")?;
+		}
+		else {
+			write!(writer, "{:5.3}", frequency / 1000.)?;
+			writer.write_all(b" GHz")?;
 		}
 	}
 
