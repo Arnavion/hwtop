@@ -1,16 +1,10 @@
-- `hwtop` - TUI monitor for CPU usage, thermal and fan sensors, and network usage.
-
-- `sensord` - D-Bus service that broadcasts CPU usage, thermal and fan sensors, and network usage information as a periodic signal. Used by `hwtop`.
-
-- `sensord-common` - Common types for `sensord` clients. Used by `hwtop`.
-
-See their respective READMEs for details.
+Common types for `sensord` clients.
 
 
 # License
 
 ```
-hwtop
+sensord-common
 
 https://github.com/Arnavion/hwtop
 

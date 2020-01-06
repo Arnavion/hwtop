@@ -1,2 +1,6 @@
-/Cargo.lock
-/target
+/hwtop/Cargo.lock
+/hwtop/target
+/sensord/Cargo.lock
+/sensord/target
+/sensord-common/Cargo.lock
+/sensord-common/target

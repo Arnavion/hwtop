@@ -1,10 +1,5 @@
 # This example config is for a desktop computer.
 
-# CPU has 24 threads. Show them in four columns of six threads each.
-cpus:
-  cols: 4
-
-
 # Sensors are read using the hwmon sysfs interface. Every hwmon device has a corresponding device name.
 # So define some hwmon devices corresponding to the device names.
 #

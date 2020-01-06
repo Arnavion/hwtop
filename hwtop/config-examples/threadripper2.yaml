@@ -1,0 +1,5 @@
+# This example config is for a desktop computer.
+
+# CPU has 24 threads. Show them in four columns of six threads each.
+cpus:
+  cols: 4

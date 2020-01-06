@@ -1,0 +1,12 @@
+[Unit]
+Description=Broadcasts CPU usage, thermal and fan sensors, and network usage information
+
+[Service]
+Type=dbus
+BusName=dev.arnavion.sensord.Daemon
+ExecStart=/usr/local/bin/sensord
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

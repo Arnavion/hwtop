@@ -6,9 +6,8 @@ pub(crate) struct Config {
 	pub(crate) networks: Vec<Network>,
 }
 
-#[derive(Debug, serde_derive::Deserialize)]
+#[derive(Debug, Default, serde_derive::Deserialize)]
 pub(crate) struct Cpus {
-	pub(crate) cols: usize,
 	#[serde(default)]
 	pub(crate) use_sysfs: bool,
 }
@@ -23,7 +22,7 @@ pub(crate) struct SensorGroup {
 #[derive(Debug)]
 pub(crate) struct TempSensor {
 	pub(crate) path: std::path::PathBuf,
-	pub(crate) offset: f32,
+	pub(crate) offset: f64,
 	pub(crate) name: Option<String>,
 }
 
@@ -46,6 +45,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 		#[derive(Debug, serde_derive::Deserialize)]
 		struct InnerConfig {
 			interval: Option<f32>,
+			#[serde(default)]
 			cpus: Cpus,
 			#[serde(default)]
 			hwmon: std::collections::BTreeMap<String, Hwmon>,
@@ -76,7 +76,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 		struct InnerTempSensor {
 			#[serde(flatten)]
 			spec: InnerTempSensorSpec,
-			offset: Option<f32>,
+			offset: Option<f64>,
 			name: Option<String>,
 		}
 

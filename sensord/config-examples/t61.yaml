@@ -1,10 +1,5 @@
 # This example config is for a Thinkpad T61 laptop.
 
-# CPU has 2 threads. Show them in two columns of one thread each.
-cpus:
-  cols: 2
-
-
 # Sensors are read using the hwmon sysfs interface. Every hwmon device has a corresponding device name.
 # So define some hwmon devices corresponding to the device names.
 #

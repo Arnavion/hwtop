@@ -1,0 +1,401 @@
+#![deny(rust_2018_idioms, warnings)]
+#![deny(clippy::all, clippy::pedantic)]
+#![allow(
+	clippy::default_trait_access,
+	clippy::shadow_unrelated,
+	clippy::too_many_lines,
+	clippy::unneeded_field_pattern,
+	clippy::use_self,
+)]
+
+mod terminal;
+
+use std::io::Write;
+
+fn main() -> Result<(), Error> {
+	let config: Config = {
+		let mut path = dirs::config_dir().ok_or("config dir not defined")?;
+		path.push("hwtop");
+		path.push("hwtop.yaml");
+		let f = std::fs::File::open(path)?;
+		serde_yaml::from_reader(f)?
+	};
+
+	let connection =
+		dbus_pure::conn::Connection::new(
+			dbus_pure::conn::BusPath::System,
+			dbus_pure::conn::SaslAuthType::Uid,
+		)?;
+	let mut dbus_client = dbus_pure::client::Client::new(connection)?;
+
+	dbus_client.method_call(
+		"org.freedesktop.DBus",
+		dbus_pure::types::ObjectPath("/org/freedesktop/DBus".into()),
+		"org.freedesktop.DBus",
+		"AddMatch",
+		Some(&dbus_pure::types::Variant::String(
+			"type='signal',path='/dev/arnavion/sensord/Daemon',interface='dev.arnavion.sensord.Daemon',member='Sensors'".into()
+		)),
+	)?;
+
+	let (event_sender, event_receiver) = std::sync::mpsc::channel();
+
+	std::thread::spawn({
+		let event_sender = event_sender.clone();
+
+		move || {
+			let err = loop {
+				let (header, body) = match dbus_client.recv() {
+					Ok(message) => message,
+					Err(err) => break err,
+				};
+
+				match header.r#type {
+					dbus_pure::types::MessageType::Signal { interface, member, path: _ }
+						if interface == "dev.arnavion.sensord.Daemon" && member == "Sensors" => (),
+					_ => continue,
+				}
+
+				let _ = event_sender.send(Event::Sensors(body));
+			};
+
+			eprintln!("{}", Error::from(err));
+			std::process::exit(1);
+		}
+	});
+
+	std::thread::spawn(move || {
+		let stdin = std::io::stdin();
+		let mut stdin = stdin.lock();
+
+		let mut buf = [0_u8; 1];
+
+		let err = loop {
+			let b = match std::io::Read::read_exact(&mut stdin, &mut buf) {
+				Ok(_) => buf[0],
+				Err(err) => break err,
+			};
+			let _ = event_sender.send(Event::Stdin(b));
+		};
+
+		eprintln!("{}", Error::from(err));
+		std::process::exit(1);
+	});
+
+	let stdout = std::io::stdout();
+	let mut stdout = stdout.lock();
+
+	let _terminal = terminal::Terminal::new(&mut stdout)?;
+
+	let mut output = vec![];
+
+	let mut message = loop {
+		match event_receiver.recv()? {
+			Event::Sensors(new_message) => {
+				let new_message = new_message.ok_or("signal has no body")?;
+				let new_message: sensord_common::SensorsMessage = serde::Deserialize::deserialize(new_message)?;
+				break new_message;
+			},
+
+			Event::Stdin(_) => (),
+		}
+	};
+
+	loop {
+		let show_sensor_names = match event_receiver.recv()? {
+			Event::Sensors(new_message) => {
+				let new_message = new_message.ok_or("signal has no body")?;
+				let new_message: sensord_common::SensorsMessage = serde::Deserialize::deserialize(new_message)?;
+				message = new_message;
+				false
+			},
+
+			Event::Stdin(b'i') => true,
+
+			Event::Stdin(b'q') | Event::Stdin(b'\x1B') => break,
+
+			Event::Stdin(_) => false,
+		};
+
+		let max_sensor_group_name_width = message.sensors.iter().map(|sensor_group| sensor_group.name.len()).max().unwrap_or_default();
+		let max_num_temp_sensors = message.sensors.iter().map(|sensor_group| sensor_group.temps.len()).max().unwrap_or_default();
+
+		let num_cpus = message.cpus.len();
+
+		output.clear();
+
+		output.write_all(b"\x1B[1;1H")?;
+
+		let num_rows = (num_cpus + config.cpus.cols - 1) / config.cpus.cols;
+		for row in 0..num_rows {
+			for col in 0..(config.cpus.cols) {
+				if col > 0 {
+					output.write_all(b"  ")?;
+				}
+				let id = row + num_rows * col;
+				if let Some(cpu) = message.cpus.get(id) {
+					print_cpu(&mut output, Some((id, cpu.frequency)), cpu.usage)?;
+				}
+			}
+
+			output.write_all(b"\r\n")?;
+		}
+
+		print_cpu(&mut output, None, message.cpu_average_usage)?;
+
+		if !message.sensors.is_empty() {
+			output.write_all(b"\r\n")?;
+
+			for sensor_group in &message.sensors {
+				output.write_all(b"\r\n")?;
+
+				write!(output, "{:>max_sensor_group_name_width$}", sensor_group.name, max_sensor_group_name_width = max_sensor_group_name_width)?;
+				output.write_all(b": ")?;
+
+				for (i, sensor) in sensor_group.temps.iter().enumerate() {
+					if i > 0 {
+						output.write_all(b"  ")?;
+					}
+
+					print_temp_sensor(&mut output, &sensor, show_sensor_names)?;
+				}
+
+				if !sensor_group.fans.is_empty() {
+					for _ in 0..(max_num_temp_sensors - sensor_group.temps.len()) {
+						output.write_all(b"         ")?;
+					}
+
+					for sensor in &sensor_group.fans {
+						output.write_all(b"  ")?;
+						print_fan_sensor(&mut output, &sensor, show_sensor_names)?;
+					}
+				}
+			}
+		}
+
+		if !message.networks.is_empty() {
+			output.write_all(b"\r\n")?;
+
+			for network in &message.networks {
+				output.write_all(b"\r\n")?;
+				print_network(&mut output, network)?;
+			}
+		}
+
+		output.write_all(b"    Press i to show sensor names, q to exit")?;
+
+		stdout.write_all(b"\x1B[2J\x1B[3J\x1B[1;1H")?;
+		stdout.write_all(&output)?;
+		stdout.flush()?;
+	}
+
+	Ok(())
+}
+
+#[derive(Debug, serde_derive::Deserialize)]
+pub(crate) struct Config {
+	pub(crate) cpus: Cpus,
+}
+
+#[derive(Debug, serde_derive::Deserialize)]
+pub(crate) struct Cpus {
+	pub(crate) cols: usize,
+}
+
+#[derive(Debug)]
+enum Event {
+	Sensors(Option<dbus_pure::types::Variant<'static>>),
+	Stdin(u8),
+}
+
+fn print_cpu<W>(mut writer: W, id_and_frequency: Option<(usize, f64)>, usage: f64) -> Result<(), Error> where W: Write {
+	let color = match usage {
+		usage if usage < 5. => b"0;34",
+		usage if usage < 10. => b"1;34",
+		usage if usage < 25. => b"1;32",
+		usage if usage < 50. => b"1;33",
+		usage if usage < 75. => b"0;33",
+		usage if usage < 90. => b"1;31",
+		_ => b"0;31",
+	};
+
+	writer.write_all(b"\x1B[")?;
+	writer.write_all(color)?;
+	writer.write_all(b"m")?;
+
+	if let Some((id, _)) = id_and_frequency {
+		write!(writer, "{:3}", id)?;
+		writer.write_all(b": ")?;
+	}
+	else {
+		writer.write_all(b"Avg: ")?;
+	}
+
+	write!(writer, "{:5.1}", usage)?;
+	writer.write_all(b"% ")?;
+
+	if let Some((_, frequency)) = id_and_frequency {
+		if frequency < 999.95 {
+			write!(writer, "{:5.1}", frequency)?;
+			writer.write_all(b" MHz")?;
+		}
+		else {
+			write!(writer, "{:5.3}", frequency / 1000.)?;
+			writer.write_all(b" GHz")?;
+		}
+	}
+
+	writer.write_all(b"\x1B[0m")?;
+
+	Ok(())
+}
+
+fn print_temp_sensor<W>(mut writer: W, sensor: &sensord_common::TempSensor, show_sensor_names: bool) -> Result<(), Error> where W: Write {
+	let temp = sensor.value;
+
+	let color = match temp {
+		temp if temp == 0. => &b"0"[..],
+		temp if temp < 30. => &b"0;34"[..],
+		temp if temp < 35. => &b"1;34"[..],
+		temp if temp < 40. => &b"1;32"[..],
+		temp if temp < 45. => &b"1;33"[..],
+		temp if temp < 55. => &b"0;33"[..],
+		temp if temp < 65. => &b"1;31"[..],
+		_ => &b"0;31"[..],
+	};
+
+	writer.write_all(b"\x1B[")?;
+	writer.write_all(color)?;
+	writer.write_all(b"m")?;
+
+	match (&sensor.name, temp) {
+		(name, _) if show_sensor_names =>
+			if name.len() > 7 {
+				writer.write_all(name[..6].as_bytes())?;
+				writer.write_all(b"\xE2\x80\xA6")?;
+			}
+			else {
+				write!(writer, "{:^7}", name)?;
+			},
+
+		(_, temp) if temp > 0. => {
+			write!(writer, "{:5.1}", temp)?;
+			writer.write_all(b"\xC2\xB0C")?;
+		},
+
+		(_, _) => {
+			writer.write_all(b"  N/A  ")?;
+		},
+	}
+
+	writer.write_all(b"\x1B[0m")?;
+
+	Ok(())
+}
+
+fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor, show_sensor_names: bool) -> Result<(), Error> where W: Write {
+	match &sensor.name {
+		name if show_sensor_names =>
+			if name.len() > 15 {
+				writer.write_all(name[..14].as_bytes())?;
+				writer.write_all(b"\xE2\x80\xA6")?;
+			}
+			else {
+				write!(writer, "{:^15}", name)?;
+			},
+		_ => {
+			let pwm = 100. * f64::from(sensor.pwm) / 255.;
+			write!(writer, "{:3.0}", pwm)?;
+			writer.write_all(b"% (")?;
+			write!(writer, "{:4}", sensor.fan)?;
+			writer.write_all(b" RPM)")?;
+		},
+	}
+
+	Ok(())
+}
+
+fn print_network<W>(mut writer: W, network: &sensord_common::Network) -> Result<(), Error> where W: Write {
+	writer.write_all(network.name.as_bytes())?;
+	writer.write_all(b": ")?;
+
+	let rx_speed = network.rx * 8.;
+	if rx_speed < 999.5 {
+		write!(writer, "{:3.0}", rx_speed)?;
+		writer.write_all(b"    b/s down   ")?;
+	}
+	else if rx_speed < 999_950. {
+		write!(writer, "{:5.1}", rx_speed / 1_000.)?;
+		writer.write_all(b" Kb/s down   ")?;
+	}
+	else if rx_speed < 999_950_000. {
+		write!(writer, "{:5.1}", rx_speed / 1_000_000.)?;
+		writer.write_all(b" Mb/s down   ")?;
+	}
+	else {
+		write!(writer, "{:5.1}", rx_speed / 1_000_000_000.)?;
+		writer.write_all(b" Gb/s down   ")?;
+	}
+
+	let tx_speed = network.tx * 8.;
+	if tx_speed < 999.5 {
+		write!(writer, "{:3.0}", tx_speed)?;
+		writer.write_all(b"    b/s up")?;
+	}
+	else if tx_speed < 999_950. {
+		write!(writer, "{:5.1}", tx_speed / 1_000.)?;
+		writer.write_all(b" Kb/s up")?;
+	}
+	else if tx_speed < 999_950_000. {
+		write!(writer, "{:5.1}", tx_speed / 1_000_000.)?;
+		writer.write_all(b" Mb/s up")?;
+	}
+	else {
+		write!(writer, "{:5.1}", tx_speed / 1_000_000_000.)?;
+		writer.write_all(b" Gb/s up")?;
+	}
+
+	Ok(())
+}
+
+struct Error {
+	inner: Box<dyn std::error::Error>,
+	#[cfg(debug_assertions)]
+	backtrace: backtrace::Backtrace,
+}
+
+impl std::fmt::Debug for Error {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		std::fmt::Display::fmt(self, f)
+	}
+}
+
+impl std::fmt::Display for Error {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		writeln!(f, "{}", self.inner)?;
+
+		let mut source = self.inner.source();
+		while let Some(err) = source {
+			writeln!(f, "caused by: {}", err)?;
+			source = err.source();
+		}
+
+		#[cfg(debug_assertions)]
+		{
+			writeln!(f)?;
+			writeln!(f, "{:?}", self.backtrace)?;
+		}
+
+		Ok(())
+	}
+}
+
+impl<E> From<E> for Error where E: Into<Box<dyn std::error::Error>> {
+	fn from(err: E) -> Self {
+		Error {
+			inner: err.into(),
+			#[cfg(debug_assertions)]
+			backtrace: Default::default(),
+		}
+	}
+}

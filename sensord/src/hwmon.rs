@@ -19,7 +19,7 @@ pub(crate) fn num_cpus(sys_devices_system_cpu_present_line_regex: &regex::bytes:
 	Ok(result.ok_or("/sys/devices/system/cpu/present is empty")?)
 }
 
-pub(crate) fn parse_proc_cpuinfo(cpus: &mut [(Cpu, f32)], proc_cpu_info_line_regex: &regex::bytes::Regex, buf: &mut Vec<u8>) -> Result<(), super::Error> {
+pub(crate) fn parse_proc_cpuinfo(cpus: &mut [(Cpu, f64)], proc_cpu_info_line_regex: &regex::bytes::Regex, buf: &mut Vec<u8>) -> Result<(), super::Error> {
 	let mut current_id: Option<usize> = None;
 
 	for_each_line("/proc/cpuinfo", buf, |line| {
@@ -42,7 +42,7 @@ pub(crate) fn parse_proc_cpuinfo(cpus: &mut [(Cpu, f32)], proc_cpu_info_line_reg
 	})
 }
 
-pub(crate) fn parse_proc_stat(average_cpu: &mut Cpu, cpus: &mut [(Cpu, f32)], buf: &mut Vec<u8>) -> Result<(), super::Error> {
+pub(crate) fn parse_proc_stat(average_cpu: &mut Cpu, cpus: &mut [(Cpu, f64)], buf: &mut Vec<u8>) -> Result<(), super::Error> {
 	for_each_line("/proc/stat", buf, |line| {
 		if !line.starts_with(b"cpu") {
 			return Ok(true);
@@ -94,8 +94,8 @@ pub(crate) fn parse_proc_stat(average_cpu: &mut Cpu, cpus: &mut [(Cpu, f32)], bu
 	})
 }
 
-pub(crate) fn parse_scaling_cur_freq(id: usize, cpu_freq: &mut f32, buf: &mut Vec<u8>) -> Result<(), super::Error> {
-	*cpu_freq = parse_hwmon::<f32>(std::path::Path::new(&format!("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq", id)), buf)?.unwrap_or_default() / 1000.;
+pub(crate) fn parse_scaling_cur_freq(id: usize, cpu_freq: &mut f64, buf: &mut Vec<u8>) -> Result<(), super::Error> {
+	*cpu_freq = parse_hwmon::<f64>(std::path::Path::new(&format!("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq", id)), buf)?.unwrap_or_default() / 1000.;
 
 	Ok(())
 }
@@ -116,8 +116,8 @@ impl Network {
 	}
 }
 
-pub(crate) fn parse_temp_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<f32>, super::Error> {
-	Ok(parse_hwmon::<f32>(path, buf)?.map(|temp| temp / 1000.))
+pub(crate) fn parse_temp_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<f64>, super::Error> {
+	Ok(parse_hwmon::<f64>(path, buf)?.map(|temp| temp / 1000.))
 }
 
 pub(crate) fn parse_fan_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<u32>, super::Error> {

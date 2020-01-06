@@ -1,0 +1,17 @@
+[package]
+name = "sensord"
+version = "0.1.0"
+authors = ["Arnavion <arnavion@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+backtrace = "0.3"
+dbus-pure = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
+libc = "0.2"
+regex = "1"
+serde = "1"
+serde_derive = "1"
+serde_yaml = "0.8"
+
+[profile.release]
+panic = "abort"
