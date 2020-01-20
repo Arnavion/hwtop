@@ -120,7 +120,7 @@ pub(crate) fn parse_temp_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Re
 	Ok(parse_hwmon::<f64>(path, buf)?.map(|temp| temp / 1000.))
 }
 
-pub(crate) fn parse_fan_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<u32>, super::Error> {
+pub(crate) fn parse_fan_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<u16>, super::Error> {
 	parse_hwmon(path, buf)
 }
 

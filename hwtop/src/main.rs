@@ -22,18 +22,18 @@ fn main() -> Result<(), Error> {
 	};
 
 	let connection =
-		dbus_pure::conn::Connection::new(
-			dbus_pure::conn::BusPath::System,
-			dbus_pure::conn::SaslAuthType::Uid,
+		dbus_pure::Connection::new(
+			dbus_pure::BusPath::System,
+			dbus_pure::SaslAuthType::Uid,
 		)?;
-	let mut dbus_client = dbus_pure::client::Client::new(connection)?;
+	let mut dbus_client = dbus_pure::Client::new(connection)?;
 
 	dbus_client.method_call(
 		"org.freedesktop.DBus",
-		dbus_pure::types::ObjectPath("/org/freedesktop/DBus".into()),
+		dbus_pure::proto::ObjectPath("/org/freedesktop/DBus".into()),
 		"org.freedesktop.DBus",
 		"AddMatch",
-		Some(&dbus_pure::types::Variant::String(
+		Some(&dbus_pure::proto::Variant::String(
 			"type='signal',path='/dev/arnavion/sensord/Daemon',interface='dev.arnavion.sensord.Daemon',member='Sensors'".into()
 		)),
 	)?;
@@ -51,7 +51,7 @@ fn main() -> Result<(), Error> {
 				};
 
 				match header.r#type {
-					dbus_pure::types::MessageType::Signal { interface, member, path: _ }
+					dbus_pure::proto::MessageType::Signal { interface, member, path: _ }
 						if interface == "dev.arnavion.sensord.Daemon" && member == "Sensors" => (),
 					_ => continue,
 				}
@@ -93,7 +93,7 @@ fn main() -> Result<(), Error> {
 		match event_receiver.recv()? {
 			Event::Sensors(new_message) => {
 				let new_message = new_message.ok_or("signal has no body")?;
-				let new_message: sensord_common::SensorsMessage = serde::Deserialize::deserialize(new_message)?;
+				let new_message: sensord_common::SensorsMessage<'static> = serde::Deserialize::deserialize(new_message)?;
 				break new_message;
 			},
 
@@ -105,7 +105,7 @@ fn main() -> Result<(), Error> {
 		let show_sensor_names = match event_receiver.recv()? {
 			Event::Sensors(new_message) => {
 				let new_message = new_message.ok_or("signal has no body")?;
-				let new_message: sensord_common::SensorsMessage = serde::Deserialize::deserialize(new_message)?;
+				let new_message: sensord_common::SensorsMessage<'static> = serde::Deserialize::deserialize(new_message)?;
 				message = new_message;
 				false
 			},
@@ -146,7 +146,7 @@ fn main() -> Result<(), Error> {
 		if !message.sensors.is_empty() {
 			output.write_all(b"\r\n")?;
 
-			for sensor_group in &message.sensors {
+			for sensor_group in &*message.sensors {
 				output.write_all(b"\r\n")?;
 
 				write!(output, "{:>max_sensor_group_name_width$}", sensor_group.name, max_sensor_group_name_width = max_sensor_group_name_width)?;
@@ -176,7 +176,7 @@ fn main() -> Result<(), Error> {
 		if !message.networks.is_empty() {
 			output.write_all(b"\r\n")?;
 
-			for network in &message.networks {
+			for network in &*message.networks {
 				output.write_all(b"\r\n")?;
 				print_network(&mut output, network)?;
 			}
@@ -204,7 +204,7 @@ pub(crate) struct Cpus {
 
 #[derive(Debug)]
 enum Event {
-	Sensors(Option<dbus_pure::types::Variant<'static>>),
+	Sensors(Option<dbus_pure::proto::Variant<'static>>),
 	Stdin(u8),
 }
 
@@ -250,7 +250,7 @@ fn print_cpu<W>(mut writer: W, id_and_frequency: Option<(usize, f64)>, usage: f6
 	Ok(())
 }
 
-fn print_temp_sensor<W>(mut writer: W, sensor: &sensord_common::TempSensor, show_sensor_names: bool) -> Result<(), Error> where W: Write {
+fn print_temp_sensor<W>(mut writer: W, sensor: &sensord_common::TempSensor<'_>, show_sensor_names: bool) -> Result<(), Error> where W: Write {
 	let temp = sensor.value;
 
 	let color = match temp {
@@ -293,7 +293,7 @@ fn print_temp_sensor<W>(mut writer: W, sensor: &sensord_common::TempSensor, show
 	Ok(())
 }
 
-fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor, show_sensor_names: bool) -> Result<(), Error> where W: Write {
+fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor<'_>, show_sensor_names: bool) -> Result<(), Error> where W: Write {
 	match &sensor.name {
 		name if show_sensor_names =>
 			if name.len() > 15 {
@@ -315,7 +315,7 @@ fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor, show_s
 	Ok(())
 }
 
-fn print_network<W>(mut writer: W, network: &sensord_common::Network) -> Result<(), Error> where W: Write {
+fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>) -> Result<(), Error> where W: Write {
 	writer.write_all(network.name.as_bytes())?;
 	writer.write_all(b": ")?;
 

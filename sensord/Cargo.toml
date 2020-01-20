@@ -9,6 +9,7 @@ backtrace = "0.3"
 dbus-pure = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
 libc = "0.2"
 regex = "1"
+sensord-common = { path = "../sensord-common" }
 serde = "1"
 serde_derive = "1"
 serde_yaml = "0.8"
