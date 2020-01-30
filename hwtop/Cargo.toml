@@ -14,6 +14,3 @@ sensord-common = { path = "../sensord-common" }
 serde = "1"
 serde_derive = "1"
 serde_yaml = "0.8"
-
-[profile.release]
-panic = "abort"
