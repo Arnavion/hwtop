@@ -25,7 +25,7 @@ hwmon:
   mobo:
     dev_name: 'nct6779'
 
-# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors, and is rendered on one line.
+# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors.
 #
 # Sensor groups allow you to group sensors from multiple hwmon devices into one logical group.
 sensors:
@@ -98,6 +98,6 @@ sensors:
     num: 5
     name: 'Rear'
 
-# Monitor usage of the network device named `enp4s0`
+# Monitor usage of the network interface named `enp4s0`
 networks:
 - 'enp4s0'

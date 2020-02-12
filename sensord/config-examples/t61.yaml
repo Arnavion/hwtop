@@ -22,7 +22,7 @@ hwmon:
     dev_name: 'thinkpad'
 
 
-# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors, and is rendered on one line.
+# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors.
 #
 # Sensor groups allow you to group sensors from multiple hwmon devices into one logical group.
 sensors:
@@ -95,6 +95,6 @@ sensors:
     name: 'xc3'
 
 
-# Monitor usage of the network device named `enp4s0`
+# Monitor usage of the network interface named `enp0s25`
 networks:
 - 'enp0s25'

@@ -8,13 +8,15 @@ cpus:
   # This is because each read of an individual `scaling_cur_freq` file can block for 10ms, which can add up to a noticeable delay for machines with many CPUs.
   # Reading from `/proc/cpuinfo` also has this delay, but it only applies once to the whole file regardless of how many CPUs there are.
   #
+  # Thus `use_sysfs` should be set to `true` only if the default of `false` does not work.
+  #
   # Ref: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id=4815d3c56d1e10449a44089a47544d9ba84fad0d
   # Ref: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id=7d5905dc14a87805a59f3c5bf70173aac2bb18f8
   # Ref: https://github.com/hishamhm/htop/pull/932#issuecomment-520197726
   use_sysfs: true
 
 
-# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors, and is rendered on one line.
+# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors.
 #
 # Sensor groups allow you to group sensors from multiple hwmon devices into one logical group.
 sensors:
@@ -27,6 +29,6 @@ sensors:
   - thermal_zone: 0
 
 
-# Monitor usage of the network device named `eth0`
+# Monitor usage of the network interface named `eth0`
 networks:
 - 'eth0'
