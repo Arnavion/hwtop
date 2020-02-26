@@ -25,22 +25,17 @@ fn main() -> Result<(), Error> {
 	let mut dbus_client = dbus_pure::Client::new(connection)?;
 
 	let request_name_result = {
-		let body =
-			dbus_client.method_call(
-				"org.freedesktop.DBus",
-				dbus_pure::proto::ObjectPath("/org/freedesktop/DBus".into()),
-				"org.freedesktop.DBus",
-				"RequestName",
-				Some(&dbus_pure::proto::Variant::Tuple {
-					elements: (&[
-						dbus_pure::proto::Variant::String("dev.arnavion.sensord.Daemon".into()),
-						dbus_pure::proto::Variant::U32(4), // DBUS_NAME_FLAG_DO_NOT_QUEUE
-					][..]).into()
-				}),
-			)?
-			.ok_or("RequestName response has no body")?;
-		let body: u32 = serde::Deserialize::deserialize(body)?;
-		body
+		let obj = OrgFreeDesktopDbusObject {
+			name: "org.freedesktop.DBus".into(),
+			path: dbus_pure::proto::ObjectPath("/org/freedesktop/DBus".into()),
+		};
+		let request_name_result =
+			obj.request_name(
+				&mut dbus_client,
+				"dev.arnavion.sensord.Daemon",
+				4, // DBUS_NAME_FLAG_DO_NOT_QUEUE
+			)?;
+		request_name_result
 	};
 	if request_name_result != 1 {
 		return Err(format!("RequestName returned {:?}", request_name_result).into());
@@ -280,3 +275,12 @@ impl<E> From<E> for Error where E: Into<Box<dyn std::error::Error>> {
 		}
 	}
 }
+
+#[dbus_pure_macros::interface("org.freedesktop.DBus")]
+trait OrgFreeDesktopDbusInterface {
+	#[name = "RequestName"]
+	fn request_name(name: &str, flags: u32) -> u32;
+}
+
+#[dbus_pure_macros::object(OrgFreeDesktopDbusInterface)]
+struct OrgFreeDesktopDbusObject;

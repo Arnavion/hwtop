@@ -28,15 +28,17 @@ fn main() -> Result<(), Error> {
 		)?;
 	let mut dbus_client = dbus_pure::Client::new(connection)?;
 
-	dbus_client.method_call(
-		"org.freedesktop.DBus",
-		dbus_pure::proto::ObjectPath("/org/freedesktop/DBus".into()),
-		"org.freedesktop.DBus",
-		"AddMatch",
-		Some(&dbus_pure::proto::Variant::String(
-			"type='signal',path='/dev/arnavion/sensord/Daemon',interface='dev.arnavion.sensord.Daemon',member='Sensors'".into()
-		)),
-	)?;
+	{
+		let obj = OrgFreeDesktopDbusObject {
+			name: "org.freedesktop.DBus".into(),
+			path: dbus_pure::proto::ObjectPath("/org/freedesktop/DBus".into()),
+		};
+		let () =
+			obj.add_match(
+				&mut dbus_client,
+				"type='signal',path='/dev/arnavion/sensord/Daemon',interface='dev.arnavion.sensord.Daemon',member='Sensors'",
+			)?;
+	}
 
 	let (event_sender, event_receiver) = std::sync::mpsc::channel();
 
@@ -399,3 +401,12 @@ impl<E> From<E> for Error where E: Into<Box<dyn std::error::Error>> {
 		}
 	}
 }
+
+#[dbus_pure_macros::interface("org.freedesktop.DBus")]
+trait OrgFreeDesktopDbusInterface {
+	#[name = "AddMatch"]
+	fn add_match(rule: &str);
+}
+
+#[dbus_pure_macros::object(OrgFreeDesktopDbusInterface)]
+struct OrgFreeDesktopDbusObject;
