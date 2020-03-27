@@ -127,7 +127,7 @@ fn main() -> Result<(), Error> {
 
 		output.clear();
 
-		output.write_all(b"\x1B[1;1H")?;
+		output.write_all(b"\x1B[2J\x1B[3J\x1B[1;1H")?;
 
 		let num_rows = (num_cpus + config.cpus.cols - 1) / config.cpus.cols;
 		for row in 0..num_rows {
@@ -187,7 +187,6 @@ fn main() -> Result<(), Error> {
 
 		output.write_all(b"    Press i to show sensor names, q to exit")?;
 
-		stdout.write_all(b"\x1B[2J\x1B[3J\x1B[1;1H")?;
 		stdout.write_all(&output)?;
 		stdout.flush()?;
 	}
