@@ -104,20 +104,22 @@ fn main() -> Result<(), Error> {
 		}
 	};
 
+	let mut show_sensor_names = false;
+
 	loop {
-		let show_sensor_names = match event_receiver.recv()? {
+		show_sensor_names = match event_receiver.recv()? {
 			Event::Sensors(new_message) => {
 				let new_message = new_message.ok_or("signal has no body")?;
 				let new_message: sensord_common::SensorsMessage<'static> = serde::Deserialize::deserialize(new_message)?;
 				message = new_message;
-				false
+				show_sensor_names
 			},
 
-			Event::Stdin(b'i') => true,
+			Event::Stdin(b'i') => !show_sensor_names,
 
 			Event::Stdin(b'q') | Event::Stdin(b'\x1B') => break,
 
-			Event::Stdin(_) => false,
+			Event::Stdin(_) => show_sensor_names,
 		};
 
 		let max_sensor_group_name_width = message.sensors.iter().map(|sensor_group| sensor_group.name.len()).max().unwrap_or_default();
@@ -185,7 +187,7 @@ fn main() -> Result<(), Error> {
 			}
 		}
 
-		output.write_all(b"    Press i to show sensor names, q to exit")?;
+		output.write_all(b"    Press i to toggle sensor names, q to exit")?;
 
 		stdout.write_all(&output)?;
 		stdout.flush()?;
