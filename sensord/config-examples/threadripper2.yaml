@@ -33,19 +33,20 @@ sensors:
   # and the motherboard's fan sensor for the CPU fan.
 - name: 'CPU'
   temps:
-    # This is a temp sensor under the hwmon named "cpu1" and is temp sensor number 1 in that device.
+    # This is a temp sensor under the hwmon named "cpu1" and is temp sensor number 2 in that device.
     # For example, if that device had the path `/sys/class/hwmon/hwmon1`, then this sensor's value is read from
-    # `/sys/class/hwmon/hwmon1/temp1_input`
+    # `/sys/class/hwmon/hwmon1/temp2_input`
     #
     # Sensors are automatically named after the corresponding label file in the hwmon device, if available
     # (eg `temp1_label` for temp sensor number 1, or `fan2_label` for fan sensor number 2).
     # This name can be overriden by setting the `name` property of the sensor.
-    # Here, the `name` property is set on these sensors because the hwmon driver doesn't have labels for them.
+    # Here, the `name` property is set on these sensors because the hwmon driver doesn't have distnguishing labels for them
+    # (both are called "Tdie").
   - hwmon: 'cpu1'
-    num: 1
+    num: 2
     name: 'CPU 1'
   - hwmon: 'cpu2'
-    num: 1
+    num: 2
     name: 'CPU 2'
     # This is a temp sensor under the hwmon named "mobo" and is temp sensor number 7 in that device.
     # For example, if that device had the path `/sys/class/hwmon/hwmon0`, then this sensor's value is read from
