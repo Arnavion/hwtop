@@ -8,7 +8,7 @@ edition = "2018"
 backtrace = "0.3"
 dbus-pure = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
 dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
-dirs = "2"
+dirs = "3"
 libc = "0.2"
 regex = "1"
 sensord-common = { path = "../sensord-common" }
