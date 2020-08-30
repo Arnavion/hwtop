@@ -9,8 +9,10 @@ build:
 	cargo build --release -p hwtop -p sensord
 
 install: build
+	mkdir -p ~/bin/
 	cp -f target/release/hwtop ~/bin/
 
+	sudo mkdir -p /usr/local/bin/
 	sudo cp -f target/release/sensord /usr/local/bin/
 	sudo cp -f sensord/data/sensord.service /etc/systemd/system/
 	sudo cp -f sensord/data/sensord.conf /etc/dbus-1/system.d/
