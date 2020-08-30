@@ -1,10 +1,37 @@
+This repository contains:
+
 - `hwtop` - TUI monitor for CPU usage, thermal and fan sensors, and network usage.
 
 - `sensord` - D-Bus service that broadcasts CPU usage, thermal and fan sensors, and network usage information as a periodic signal. Used by `hwtop`.
 
-- `sensord-common` - Common types for `sensord` clients. Used by `hwtop`.
+See their respective READMEs for more details.
 
-See their respective READMEs for details.
+
+# Installation
+
+1. Build and install the `sensord` and `hwtop` binaries (to `/usr/local/bin` and `~/bin` respectively) and the `sensord` systemd service and D-Bus config files:
+
+   ```sh
+   make install
+   ```
+
+   Make sure to run it as your regular user, ie not as root and without `sudo`.
+
+1. Create the configuration for both services as described in their respective READMEs.
+
+1. Start the `sensord` service.
+
+   ```sh
+   sudo systemctl start sensord
+
+   # sudo systemctl enable sensord   # To start it automatically on boot
+   ```
+
+1. Start `hwtop` in a terminal.
+
+   ```sh
+   hwtop
+   ```
 
 
 # License

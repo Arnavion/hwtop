@@ -1,16 +1,15 @@
-TUI monitor for CPU usage, thermal and fan sensors, and network usage.
+`hwtop` is a TUI monitor for CPU usage, thermal and fan sensors, and network usage.
 
 
-# Build
+# Build and install
+
+Running `make install` from the repository root will already install the binary.
+
+To install manually instead, run:
 
 ```sh
 cargo build --release
-```
 
-
-# Install
-
-```sh
 cp -f ./target/release/hwtop ~/bin/
 ```
 

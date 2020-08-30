@@ -1,16 +1,15 @@
-D-Bus service that broadcasts CPU usage, thermal and fan sensors, and network usage information.
+`sensord` is a D-Bus service that broadcasts CPU usage, thermal and fan sensors, and network usage information.
 
 
-# Build
+# Build and install
+
+Running `make install` from the repository root will already install the binary, systemd service, and D-Bus config.
+
+To install manually instead, run:
 
 ```sh
 cargo build --release
-```
 
-
-# Install
-
-```sh
 sudo cp -f ./target/release/sensord /usr/local/bin/
 
 sudo cp -f ./data/sensord.service /etc/systemd/system/
