@@ -16,16 +16,31 @@ cpus:
   use_sysfs: true
 
 
+# Sensors are read using the hwmon sysfs interface. Every hwmon device has a corresponding device name.
+# So define some hwmon devices corresponding to the device names.
+#
+# Each entry here corresponds to a path under `/sys/class/hwmon`. The `dev_name` is the value of `/sys/class/hwmon/hwmon*/name`
+hwmon:
+  # Define an hwmon named "cpu" corresponding to the real hwmon device with name "cpu_thermal"
+  cpu:
+    dev_name: 'cpu_thermal'
+
+
 # List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors.
 #
 # Sensor groups allow you to group sensors from multiple hwmon devices into one logical group.
 sensors:
 - name: 'CPU'
   temps:
-    # The Raspberry Pi does not have an hwmon device for its temp sensor. Instead, the temp sensor must be read from the thermal driver.
-    # This is indicate by setting the temp sensor to a `thermal_zone:` instead of an `hwmon: ... num: ...`
+    # This is a temp sensor under the hwmon named "cpu" and is temp sensor number 1 in that device.
+    # For example, if that device had the path `/sys/class/hwmon/hwmon0`, then this sensor's value is read from
+    # `/sys/class/hwmon/hwmon0/temp1_input`
+  - hwmon: 'cpu'
+    num: 1
+    # The Raspberry Pi also reports thermal zones. A thermal zone's temperature can be read by setting the temp sensor to a `thermal_zone: ...`
+    # instead of an `hwmon: ... num: ...`
     #
-    # A value of `0` means the value is read from `/sys/class/thermal/thermal_zone0/temp`
+    # A value of `0` means the value is read from `/sys/class/thermal/thermal_zone0/temp`, and its name is read from `/sys/class/thermal/thermal_zone0/type`
   - thermal_zone: 0
 
 
