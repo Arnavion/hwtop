@@ -165,14 +165,19 @@ where
 	T: std::str::FromStr,
 	super::Error: From<<T as std::str::FromStr>::Err>,
 {
-	let mut file = std::io::BufReader::new(std::fs::File::open(path)?);
+	let file = match std::fs::File::open(path) {
+		Ok(file) => file,
+		Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+		Err(err) => return Err(err.into()),
+	};
+	let mut file = std::io::BufReader::new(file);
 
 	buf.clear();
 
 	let read = match std::io::BufRead::read_until(&mut file, b'\n', buf) {
 		Ok(0) => return Err("file is empty".into()),
 		Ok(read) => read,
-		Err(ref err) if err.raw_os_error() == Some(libc::ENXIO) => return Ok(None),
+		Err(err) if err.raw_os_error() == Some(libc::ENXIO) => return Ok(None),
 		Err(err) => return Err(err.into()),
 	};
 	let buf = &buf[..read];

@@ -63,7 +63,20 @@ sensors:
     num: 2
     name: 'Fan 1'
 
-  # The second sensor group is for the GPU.
+  # The second sensor group is also for the CPU. This group is for the Tccd1 sensor, reported as temp sensor number 3.
+  # Unfortunately the sensor is only reported by only one of the k10temp hwmon devices, and it's not possible to know up-front
+  # which device it will be reported by. So this section simply defines the sensor to be read from both devices.
+  # At runtime, the one that exists will be read successfully, and the one that doesn't will just be ignored.
+- name: 'CPU'
+  temps:
+  - hwmon: 'cpu1'
+    num: 3
+    offset: -27.0
+  - hwmon: 'cpu2'
+    num: 3
+    offset: -27.0
+
+  # The third sensor group is for the GPU.
 - name: 'GPU'
   temps:
   - hwmon: 'gpu'
@@ -76,7 +89,7 @@ sensors:
   - hwmon: 'gpu'
     num: 1
 
-  # The third sensor group is for the motherboard.
+  # The fourth sensor group is for the motherboard.
 - name: 'Mobo'
   temps:
   - hwmon: 'mobo'

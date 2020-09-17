@@ -64,6 +64,7 @@ cp -f ./target/release/hwtop ~/bin/
     Avg:   1.3%
 
      CPU:  30.0°C   30.0°C   30.0°C            69% (1002 RPM)
+     CPU:   B/A     30.0°C                     69% (1002 RPM)
      GPU:  28.0°C   29.0°C   29.0°C            25% ( 835 RPM)
     Mobo:  30.0°C   40.0°C   33.0°C   36.0°C   65% ( 624 RPM)   65% ( 779 RPM)   65% ( 704 RPM)
 
