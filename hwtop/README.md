@@ -35,7 +35,7 @@ cp -f ./target/release/hwtop ~/bin/
 
     CPU:  47.2°C
 
-    eth0:   2.1 KB/s down     1.5 KB/s up    Press i to show sensor names, q to exit
+    eth0:   2.1 KB/s down     1.5 KB/s up    [i] toggle sensor names  [q] exit
     ```
 
 1. Output for the device corresponding to `t61.yaml`
@@ -49,7 +49,7 @@ cp -f ./target/release/hwtop ~/bin/
     Mobo:  42.0°C   38.0°C   31.0°C   40.0°C   48.0°C   46.0°C   14% (3236 RPM)
     Mobo:   N/A     28.0°C    N/A      N/A
 
-    enp0s25:    140 B/s down     1.0 KB/s up    Press i to show sensor names, q to exit
+    enp0s25:    140 B/s down     1.0 KB/s up    [i] toggle sensor names  [q] exit
     ```
 
 1. Output for the device corresponding to `threadripper2.yaml`
@@ -68,7 +68,7 @@ cp -f ./target/release/hwtop ~/bin/
      GPU:  28.0°C   29.0°C   29.0°C            25% ( 835 RPM)
     Mobo:  30.0°C   40.0°C   33.0°C   36.0°C   65% ( 624 RPM)   65% ( 779 RPM)   65% ( 704 RPM)
 
-    enp4s0:   4.1 KB/s down      476 B/s up    Press i to show sensor names, q to exit
+    enp4s0:   4.1 KB/s down      476 B/s up    [i] toggle sensor names  [q] exit
     ```
 
 

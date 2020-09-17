@@ -187,7 +187,7 @@ fn main() -> Result<(), Error> {
 			}
 		}
 
-		output.write_all(b"    Press i to toggle sensor names, q to exit")?;
+		output.write_all(b"    [i] toggle sensor names  [q] exit")?;
 
 		stdout.write_all(&output)?;
 		stdout.flush()?;
