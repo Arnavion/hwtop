@@ -124,6 +124,7 @@ fn main() -> Result<(), Error> {
 
 		let max_sensor_group_name_width = message.sensors.iter().map(|sensor_group| sensor_group.name.len()).max().unwrap_or_default();
 		let max_num_temp_sensors = message.sensors.iter().map(|sensor_group| sensor_group.temps.len()).max().unwrap_or_default();
+		let max_network_name_width = message.networks.iter().map(|network| network.name.len()).max().unwrap_or_default();
 
 		let num_cpus = message.cpus.len();
 
@@ -183,7 +184,7 @@ fn main() -> Result<(), Error> {
 
 			for network in &*message.networks {
 				output.write_all(b"\r\n")?;
-				print_network(&mut output, network)?;
+				print_network(&mut output, network, max_network_name_width)?;
 			}
 		}
 
@@ -319,8 +320,8 @@ fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor<'_>, sh
 	Ok(())
 }
 
-fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>) -> Result<(), Error> where W: Write {
-	writer.write_all(network.name.as_bytes())?;
+fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_network_name_width: usize) -> Result<(), Error> where W: Write {
+	write!(writer, "{:>max_network_name_width$}", network.name, max_network_name_width = max_network_name_width)?;
 	writer.write_all(b": ")?;
 
 	let rx_speed = network.rx * 8.;
