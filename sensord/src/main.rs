@@ -149,13 +149,13 @@ fn main() -> Result<(), Error> {
 
 		for (sensor_group, message_sensor_group) in config.sensors.iter().zip(&mut *message_sensor_groups) {
 			for (sensor, message_temp_sensor) in sensor_group.temps.iter().zip(&mut *message_sensor_group.temps) {
-				let temp = hwmon::parse_temp_sensor(&sensor.path, &mut buf)?.map(|temp| temp + sensor.offset);
+				let temp = hwmon::parse_temp_sensor(sensor.path.as_deref(), &mut buf)?.map(|temp| temp + sensor.offset);
 				message_temp_sensor.value = temp.unwrap_or_default();
 			}
 
 			for (sensor, message_fan_sensor) in sensor_group.fans.iter().zip(&mut *message_sensor_group.fans) {
-				let fan = hwmon::parse_fan_sensor(&sensor.fan_path, &mut buf)?;
-				let pwm = hwmon::parse_pwm_sensor(&sensor.pwm_path, &mut buf)?;
+				let fan = hwmon::parse_fan_sensor(sensor.fan_path.as_deref(), &mut buf)?;
+				let pwm = hwmon::parse_pwm_sensor(sensor.pwm_path.as_deref(), &mut buf)?;
 				message_fan_sensor.fan = fan.unwrap_or_default();
 				message_fan_sensor.pwm = pwm.unwrap_or_default();
 			}

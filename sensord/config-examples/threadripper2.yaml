@@ -33,30 +33,37 @@ sensors:
   # and the motherboard's fan sensor for the CPU fan.
 - name: 'CPU'
   temps:
-    # This is a temp sensor under the hwmon named "cpu1" and is temp sensor number 2 in that device.
-    # For example, if that device had the path `/sys/class/hwmon/hwmon1`, then this sensor's value is read from
-    # `/sys/class/hwmon/hwmon1/temp2_input`
+    # Sensors are identified in two ways, either by their number or by their label. For example, temp sensor 1
+    # has its value in the file `temp1_input` and its label in the file `temp1_label`. Identifying a sensor by its label
+    # is handy in order to have a self-documenting string, but note that not all sensors have labels.
     #
-    # Sensors are automatically named after the corresponding label file in the hwmon device, if available
-    # (eg `temp1_label` for temp sensor number 1, or `fan2_label` for fan sensor number 2).
-    # This name can be overriden by setting the `name` property of the sensor.
-    # Here, the `name` property is set on these sensors because the hwmon driver doesn't have distnguishing labels for them
-    # (both are called "Tdie").
+    # sensord also considers sensors to have a name. One can be specified explicitly in the config,
+    # or else the label will be used as the name.
+    #
+    # These two temp sensors are looked up under the hwmons named "cpu1" and "cpu2" respectively by their label "Tdie".
+    # For example, if that device had the path `/sys/class/hwmon/hwmon1`, and if `/sys/class/hwmon/hwmon1/temp2_label` has the contents "Tdie",
+    # then this sensor's value would be read from `/sys/class/hwmon/hwmon1/temp2_input`
+    #
+    # Since both sensors have the same label, their default name would also be the same. So here their `name` property is set explicitly
+    # to visually differentiate between them.
   - hwmon: 'cpu1'
-    num: 2
+    label: 'Tdie'
     name: 'CPU 1'
   - hwmon: 'cpu2'
-    num: 2
+    label: 'Tdie'
     name: 'CPU 2'
     # This is a temp sensor under the hwmon named "mobo" and is temp sensor number 7 in that device.
     # For example, if that device had the path `/sys/class/hwmon/hwmon0`, then this sensor's value is read from
     # `/sys/class/hwmon/hwmon0/temp7_input`. Furthermore, a static offset of -27.0 is applied to this sensor's value
     # before it's displayed (because this is a Threadripper 2 CPU).
   - hwmon: 'mobo'
-    num: 7
+    label: 'SMBUSMASTER 0'
     offset: -27.0
   fans:
     # This is a fan sensor under the hwmon named "mobo" and is fan sensor number 2 in that device.
+    # Just like with temp sensors the sensor can be looked up by label instead, and the sensor name has the same behavior as for temp sensors.
+    # Since the fan sensor does not have a corresponding label, it is looked up by number.
+    #
     # For example, if that device had the path `/sys/class/hwmon/hwmon0`, then this sensor's value is read from
     # `/sys/class/hwmon/hwmon0/fan2_input`
   - hwmon: 'mobo'
@@ -70,21 +77,21 @@ sensors:
 - name: 'CPU'
   temps:
   - hwmon: 'cpu1'
-    num: 3
+    label: 'Tccd1'
     offset: -27.0
   - hwmon: 'cpu2'
-    num: 3
+    label: 'Tccd1'
     offset: -27.0
 
   # The third sensor group is for the GPU.
 - name: 'GPU'
   temps:
   - hwmon: 'gpu'
-    num: 1
+    label: 'edge'
   - hwmon: 'gpu'
-    num: 2
+    label: 'junction'
   - hwmon: 'gpu'
-    num: 3
+    label: 'mem'
   fans:
   - hwmon: 'gpu'
     num: 1
@@ -93,13 +100,13 @@ sensors:
 - name: 'Mobo'
   temps:
   - hwmon: 'mobo'
-    num: 1
+    label: 'SYSTIN'
   - hwmon: 'mobo'
-    num: 4
+    label: 'AUXTIN1'
   - hwmon: 'mobo'
-    num: 5
+    label: 'AUXTIN2'
   - hwmon: 'mobo'
-    num: 6
+    label: 'AUXTIN3'
   fans:
     # Here, the `name` property is set on these fan sensors to identify which chassis fans they correspond to.
   - hwmon: 'mobo'

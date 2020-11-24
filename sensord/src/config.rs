@@ -21,15 +21,15 @@ pub(crate) struct SensorGroup {
 
 #[derive(Debug)]
 pub(crate) struct TempSensor {
-	pub(crate) path: std::path::PathBuf,
+	pub(crate) path: Option<std::path::PathBuf>,
 	pub(crate) offset: f64,
 	pub(crate) name: Option<String>,
 }
 
 #[derive(Debug)]
 pub(crate) struct FanSensor {
-	pub(crate) fan_path: std::path::PathBuf,
-	pub(crate) pwm_path: std::path::PathBuf,
+	pub(crate) fan_path: Option<std::path::PathBuf>,
+	pub(crate) pwm_path: Option<std::path::PathBuf>,
 	pub(crate) name: Option<String>,
 }
 
@@ -83,15 +83,32 @@ impl<'de> serde::Deserialize<'de> for Config {
 		#[derive(Debug, serde_derive::Deserialize)]
 		#[serde(untagged)]
 		enum InnerTempSensorSpec {
-			Hwmon { hwmon: String, num: u8 },
+			Hwmon { hwmon: String, #[serde(flatten)] num_or_label: HwmonNumOrLabel },
 			Thermal { thermal_zone: u8 },
 		}
 
 		#[derive(Debug, serde_derive::Deserialize)]
 		struct InnerFanSensor {
 			hwmon: String,
-			num: u8,
+			#[serde(flatten)] num_or_label: HwmonNumOrLabel,
 			name: Option<String>,
+		}
+
+		#[derive(Debug, serde_derive::Deserialize)]
+		struct HwmonNum {
+			num: u8,
+		}
+
+		#[derive(Debug, serde_derive::Deserialize)]
+		struct HwmonLabel {
+			label: String,
+		}
+
+		#[derive(Debug, serde_derive::Deserialize)]
+		#[serde(untagged)]
+		enum HwmonNumOrLabel {
+			Num(HwmonNum),
+			Label(HwmonLabel),
 		}
 
 		let InnerConfig { interval, cpus, hwmon, sensors, networks } = serde::Deserialize::deserialize(deserializer)?;
@@ -108,8 +125,8 @@ impl<'de> serde::Deserialize<'de> for Config {
 					for dir in std::fs::read_dir("/sys/class/hwmon")? {
 						let dir = dir?.path();
 						let name_file = dir.join("name");
-						if let Ok(name) = std::fs::read_to_string(name_file) {
-							if name.trim() == dev_name {
+						if let Ok(mut name) = std::fs::read_to_string(name_file) {
+							if name.pop() == Some('\n') && name == dev_name {
 								let dir = std::fs::canonicalize(dir)?;
 								if already_discovered_hwmon.insert(dir.clone()) {
 									return Ok((hwmon_name, dir));
@@ -146,21 +163,58 @@ impl<'de> serde::Deserialize<'de> for Config {
 				let temps: Result<_, super::Error> =
 					temps.into_iter()
 					.map(|InnerTempSensor { spec, offset, name }| match spec {
-						InnerTempSensorSpec::Hwmon { hwmon: sensor_hwmon, num } => {
+						InnerTempSensorSpec::Hwmon { hwmon: sensor_hwmon, num_or_label } => {
 							let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {:?} is not defined", sensor_hwmon))?;
 
-							let name = name.or_else(|| {
+							let num = match num_or_label {
+								HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
+
+								HwmonNumOrLabel::Label(HwmonLabel { label: expected_label }) => {
+									let mut num = None;
+
+									for entry in std::fs::read_dir(hwmon)? {
+										let entry = entry?.path();
+
+										let entry_file_name = match entry.file_name().and_then(std::ffi::OsStr::to_str) {
+											Some(entry_file_name) => entry_file_name,
+											None => continue,
+										};
+										if !entry_file_name.starts_with("temp") || !entry_file_name.ends_with("_label") {
+											continue;
+										}
+
+										if let Ok(mut actual_label) = std::fs::read_to_string(&entry) {
+											if actual_label.pop() == Some('\n') && actual_label == expected_label {
+												let actual_num = &entry_file_name[("temp".len())..(entry_file_name.len() - "_label".len())];
+												if let Ok(actual_num) = actual_num.parse() {
+													num = Some(actual_num);
+													break;
+												}
+											}
+										}
+									}
+
+									num
+								},
+							};
+
+							let name = name.or_else(|| num.and_then(|num| {
 								let label_path = hwmon.join(format!("temp{}_label", num));
-								if let Ok(label) = std::fs::read_to_string(label_path) {
-									Some(label.trim().to_owned())
+								if let Ok(mut label) = std::fs::read_to_string(label_path) {
+									if label.pop() == Some('\n') {
+										Some(label)
+									}
+									else {
+										None
+									}
 								}
 								else {
 									None
 								}
-							});
+							}));
 
 							Ok(TempSensor {
-								path: hwmon.join(format!("temp{}_input", num)),
+								path: num.map(|num| hwmon.join(format!("temp{}_input", num))),
 								offset: offset.unwrap_or_default(),
 								name,
 							})
@@ -180,8 +234,10 @@ impl<'de> serde::Deserialize<'de> for Config {
 								}
 							});
 
+							thermal.push("temp");
+
 							Ok(TempSensor {
-								path: thermal.join("temp"),
+								path: Some(thermal),
 								offset: offset.unwrap_or_default(),
 								name,
 							})
@@ -192,10 +248,42 @@ impl<'de> serde::Deserialize<'de> for Config {
 
 				let fans: Result<_, super::Error> =
 					fans.into_iter()
-					.map(|InnerFanSensor { hwmon: sensor_hwmon, num, name }| {
+					.map(|InnerFanSensor { hwmon: sensor_hwmon, num_or_label, name }| {
 						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {:?} is not defined", sensor_hwmon))?;
 
-						let name = name.or_else(|| {
+						let num = match num_or_label {
+							HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
+
+							HwmonNumOrLabel::Label(HwmonLabel { label: expected_label }) => {
+								let mut num = None;
+
+								for entry in std::fs::read_dir(hwmon)? {
+									let entry = entry?.path();
+
+									let entry_file_name = match entry.file_name().and_then(std::ffi::OsStr::to_str) {
+										Some(entry_file_name) => entry_file_name,
+										None => continue,
+									};
+									if !entry_file_name.starts_with("fan") || !entry_file_name.ends_with("_label") {
+										continue;
+									}
+
+									if let Ok(mut actual_label) = std::fs::read_to_string(&entry) {
+										if actual_label.pop() == Some('\n') && actual_label == expected_label {
+											let actual_num = &entry_file_name[("fan".len())..(entry_file_name.len() - "_label".len())];
+											if let Ok(actual_num) = actual_num.parse() {
+												num = Some(actual_num);
+												break;
+											}
+										}
+									}
+								}
+
+								num
+							},
+						};
+
+						let name = name.or_else(|| num.and_then(|num| {
 							let label_path = hwmon.join(format!("fan{}_label", num));
 							if let Ok(label) = std::fs::read_to_string(label_path) {
 								Some(label.trim().to_owned())
@@ -203,11 +291,11 @@ impl<'de> serde::Deserialize<'de> for Config {
 							else {
 								None
 							}
-						});
+						}));
 
 						Ok(FanSensor {
-							fan_path: hwmon.join(format!("fan{}_input", num)),
-							pwm_path: hwmon.join(format!("pwm{}", num)),
+							fan_path: num.map(|num| hwmon.join(format!("fan{}_input", num))),
+							pwm_path: num.map(|num| hwmon.join(format!("pwm{}", num))),
 							name,
 						})
 					})

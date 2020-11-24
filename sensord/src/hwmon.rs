@@ -116,16 +116,22 @@ impl Network {
 	}
 }
 
-pub(crate) fn parse_temp_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<f64>, super::Error> {
-	Ok(parse_hwmon::<f64>(path, buf)?.map(|temp| temp / 1000.))
+pub(crate) fn parse_temp_sensor(path: Option<&std::path::Path>, buf: &mut Vec<u8>) -> Result<Option<f64>, super::Error> {
+	match path {
+		Some(path) => match parse_hwmon::<f64>(path, buf) {
+			Ok(Some(temp)) => Ok(Some(temp / 1000.)),
+			result => result,
+		},
+		None => Ok(None),
+	}
 }
 
-pub(crate) fn parse_fan_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<u16>, super::Error> {
-	parse_hwmon(path, buf)
+pub(crate) fn parse_fan_sensor(path: Option<&std::path::Path>, buf: &mut Vec<u8>) -> Result<Option<u16>, super::Error> {
+	path.map_or(Ok(None), |path| parse_hwmon(path, buf))
 }
 
-pub(crate) fn parse_pwm_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<u8>, super::Error> {
-	parse_hwmon(path, buf)
+pub(crate) fn parse_pwm_sensor(path: Option<&std::path::Path>, buf: &mut Vec<u8>) -> Result<Option<u8>, super::Error> {
+	path.map_or(Ok(None), |path| parse_hwmon(path, buf))
 }
 
 fn for_each_line(
