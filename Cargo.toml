@@ -4,6 +4,7 @@ members = [
 	"sensord",
 	"sensord-common",
 ]
+resolver = "2"
 
 [profile.release]
 panic = "abort"
