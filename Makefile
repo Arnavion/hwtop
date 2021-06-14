@@ -9,8 +9,7 @@ build:
 	cargo build --release -p hwtop -p sensord
 
 install: build
-	mkdir -p ~/bin/
-	cp -f target/release/hwtop ~/bin/
+	cp -f target/release/hwtop ~/.local/bin/
 
 	sudo mkdir -p /usr/local/bin/
 	sudo cp -f target/release/sensord /usr/local/bin/
