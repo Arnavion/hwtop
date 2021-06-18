@@ -118,7 +118,7 @@ fn main() -> Result<(), Error> {
 
 			Event::Stdin(b'i') => !show_sensor_names,
 
-			Event::Stdin(b'q') | Event::Stdin(b'\x1B') => break,
+			Event::Stdin(b'q' | b'\x1B') => break,
 
 			Event::Stdin(_) => show_sensor_names,
 		};
@@ -164,7 +164,7 @@ fn main() -> Result<(), Error> {
 						output.write_all(b"  ")?;
 					}
 
-					print_temp_sensor(&mut output, &sensor, show_sensor_names)?;
+					print_temp_sensor(&mut output, sensor, show_sensor_names)?;
 				}
 
 				if !sensor_group.fans.is_empty() {
@@ -174,7 +174,7 @@ fn main() -> Result<(), Error> {
 
 					for sensor in &sensor_group.fans {
 						output.write_all(b"  ")?;
-						print_fan_sensor(&mut output, &sensor, show_sensor_names)?;
+						print_fan_sensor(&mut output, sensor, show_sensor_names)?;
 					}
 				}
 			}
