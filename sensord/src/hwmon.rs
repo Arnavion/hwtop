@@ -110,8 +110,8 @@ pub(crate) struct Network {
 impl Network {
 	pub(crate) fn update(&mut self, rx_path: &std::path::Path, tx_path: &std::path::Path, buf: &mut Vec<u8>) -> Result<(), super::Error> {
 		self.now = std::time::Instant::now();
-		self.rx = parse_hwmon(rx_path, buf)?.unwrap();
-		self.tx = parse_hwmon(tx_path, buf)?.unwrap();
+		self.rx = parse_hwmon(rx_path, buf)?.unwrap_or(0);
+		self.tx = parse_hwmon(tx_path, buf)?.unwrap_or(0);
 		Ok(())
 	}
 }

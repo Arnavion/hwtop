@@ -311,23 +311,22 @@ impl<'de> serde::Deserialize<'de> for Config {
 			.collect();
 		let sensors = sensors.map_err(serde::de::Error::custom)?;
 
-		let networks: Result<_, super::Error> =
+		let networks =
 			networks.into_iter()
 			.map(|network| {
 				let mut dir: std::path::PathBuf = "/sys/class/net".into();
 				dir.push(&network);
-				let mut dir = std::fs::canonicalize(dir)?;
+				let mut dir = std::fs::canonicalize(&dir).unwrap_or(dir);
 				dir.push("statistics");
 				let rx_path = dir.join("rx_bytes");
 				let tx_path = dir.join("tx_bytes");
-				Ok(Network {
+				Network {
 					name: network,
 					rx_path,
 					tx_path,
-				})
+				}
 			})
 			.collect();
-		let networks = networks.map_err(serde::de::Error::custom)?;
 
 		Ok(Config {
 			interval,
