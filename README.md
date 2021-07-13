@@ -21,10 +21,20 @@ See their respective READMEs for more details.
 
 1. Start the `sensord` service.
 
+   systemd:
+
    ```sh
    sudo systemctl start sensord
 
    # sudo systemctl enable sensord   # To start it automatically on boot
+   ```
+
+   openrc:
+
+   ```sh
+   sudo rc-service sensord start
+
+   # sudo rc-update add sensord default   # To start it automatically on boot
    ```
 
 1. Start `hwtop` in a terminal.

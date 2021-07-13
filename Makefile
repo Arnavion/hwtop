@@ -13,9 +13,13 @@ install: build
 
 	sudo mkdir -p /usr/local/bin/
 	sudo cp -f target/release/sensord /usr/local/bin/
-	sudo cp -f sensord/data/sensord.service /etc/systemd/system/
-	sudo cp -f sensord/data/sensord.conf /etc/dbus-1/system.d/
-	sudo systemctl daemon-reload
+	if [ -d '/etc/systemd/system/' ]; then \
+		sudo cp -f sensord/data/systemd/sensord.service /etc/systemd/system/; \
+		sudo systemctl daemon-reload; \
+	elif [ -d '/etc/init.d/' ]; then \
+		sudo cp -f sensord/data/openrc/sensord /etc/init.d/; \
+	fi
+	sudo cp -f sensord/data/systemd/sensord.conf /etc/dbus-1/system.d/
 
 test:
 	cargo test --all

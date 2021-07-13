@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+
+command=/usr/local/bin/sensord
+command_args=
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+	need dbus
+}
