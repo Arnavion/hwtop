@@ -18,7 +18,7 @@ fn main() -> Result<(), Error> {
 	let config: Config = {
 		let mut path = dirs::config_dir().ok_or("config dir not defined")?;
 		path.push("hwtop");
-		path.push("hwtop.yaml");
+		path.push("config.yaml");
 		let f = std::fs::File::open(path)?;
 		serde_yaml::from_reader(f)?
 	};
