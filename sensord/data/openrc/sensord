@@ -2,9 +2,14 @@
 
 command=/usr/local/bin/sensord
 command_args=
+
 command_background=true
 pidfile="/run/${RC_SVCNAME}.pid"
 
+output_logger='logger -p daemon.info -t sensord.stdout'
+error_logger='logger -p daemon.err -t sensord.stderr'
+
 depend() {
 	need dbus
+	use syslog
 }
