@@ -21,6 +21,7 @@ pub struct SensorGroup<'a> {
 	pub name: std::borrow::Cow<'a, str>,
 	pub temps: Vec<TempSensor<'a>>,
 	pub fans: Vec<FanSensor<'a>>,
+	pub bats: Vec<BatSensor<'a>>,
 }
 
 #[derive(Clone, Debug, dbus_pure_macros::AsVariant, serde_derive::Deserialize)]
@@ -34,6 +35,12 @@ pub struct FanSensor<'a> {
 	pub name: std::borrow::Cow<'a, str>,
 	pub fan: u16,
 	pub pwm: u8,
+}
+
+#[derive(Clone, Debug, dbus_pure_macros::AsVariant, serde_derive::Deserialize)]
+pub struct BatSensor<'a> {
+	pub name: std::borrow::Cow<'a, str>,
+	pub capacity: u8,
 }
 
 #[derive(Clone, Debug, dbus_pure_macros::AsVariant, serde_derive::Deserialize)]

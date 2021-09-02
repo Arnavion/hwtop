@@ -1,7 +1,7 @@
-# This example config is for a Raspberry Pi 3.
+# This example config is for a PinePhone.
 
 cpus:
-  # CPU frequency is normally read from `/proc/cpuinfo`. However the Raspberry Pi's kernel does not populate the CPU frequency in that file.
+  # CPU frequency is normally read from `/proc/cpuinfo`. However the PinePhone's kernel does not populate the CPU frequency in that file.
   # Setting `use_sysfs` to `true` makes `hwtop` read the CPU frequency from `/sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq` instead.
   #
   # While the `scaling_cur_freq` file is always present, it is better to let `hwtop` read from `/proc/cpuinfo` if the frequency information is available there.
@@ -15,16 +15,22 @@ cpus:
   # Ref: https://github.com/hishamhm/htop/pull/932#issuecomment-520197726
   use_sysfs: true
 
-
 # Sensors are read using the hwmon sysfs interface. Every hwmon device has a corresponding device name.
 # So define some hwmon devices corresponding to the device names.
 #
 # Each entry here corresponds to a path under `/sys/class/hwmon`. The `dev_name` is the value of `/sys/class/hwmon/hwmon*/name`
 hwmon:
-  # Define an hwmon named "cpu" corresponding to the real hwmon device with name "cpu_thermal"
   cpu:
-    dev_name: 'cpu_thermal'
+    dev_name: 'cpu0_thermal'
 
+  gpu0:
+    dev_name: 'gpu0_thermal'
+
+  gpu1:
+    dev_name: 'gpu1_thermal'
+
+  bat:
+    dev_name: 'axp20x_battery'
 
 # List of sensor groups. Each group has a name, zero or more temp sensors, zero or more fan sensors, and zero or more battery sensors.
 #
@@ -37,13 +43,25 @@ sensors:
     # `/sys/class/hwmon/hwmon0/temp1_input`
   - hwmon: 'cpu'
     num: 1
-    # The Raspberry Pi also reports thermal zones. A thermal zone's temperature can be read by setting the temp sensor to a `thermal_zone: ...`
-    # instead of an `hwmon: ... num: ...`
+
+  # The second sensor group is for the GPU.
+- name: 'GPU'
+  temps:
+  - hwmon: 'gpu0'
+    num: 1
+  - hwmon: 'gpu1'
+    num: 1
+
+  # The third sensor group is for the battery.
+- name: 'Bat'
+  bats:
+    # This is a battery capacity sensor in the hwmon named "bat".
     #
-    # A value of `0` means the value is read from `/sys/class/thermal/thermal_zone0/temp`, and its name is read from `/sys/class/thermal/thermal_zone0/type`
-  - thermal_zone: 0
+    # For example, if that device had the path `/sys/class/hwmon/hwmon0`, then this sensor's value is read from
+    # `/sys/class/hwmon/hwmon0/device/capacity`
+  - hwmon: 'bat'
 
-
-# Monitor usage of the network interface named `eth0`
+# Monitor usage of the network interfaces named `eth0` and `wwan0`
 networks:
 - 'eth0'
+- 'wwan0'

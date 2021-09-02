@@ -1,0 +1,5 @@
+# This example config is for a PinePhone.
+
+# CPU has 4 threads. Show them in two columns of one thread each.
+cpus:
+  cols: 2

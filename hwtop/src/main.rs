@@ -177,6 +177,17 @@ fn main() -> Result<(), Error> {
 						print_fan_sensor(&mut output, sensor, show_sensor_names)?;
 					}
 				}
+
+				if !sensor_group.bats.is_empty() {
+					for _ in 0..(max_num_temp_sensors - sensor_group.temps.len()) {
+						output.write_all(b"         ")?;
+					}
+
+					for sensor in &sensor_group.bats {
+						output.write_all(b"  ")?;
+						print_bat_sensor(&mut output, sensor, show_sensor_names)?;
+					}
+				}
 			}
 		}
 
@@ -315,6 +326,30 @@ fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor<'_>, sh
 			writer.write_all(b"% (")?;
 			write!(writer, "{:4}", sensor.fan)?;
 			writer.write_all(b" RPM)")?;
+		},
+	}
+
+	Ok(())
+}
+
+fn print_bat_sensor<W>(mut writer: W, sensor: &sensord_common::BatSensor<'_>, show_sensor_names: bool) -> Result<(), Error> where W: Write {
+	match (&sensor.name, sensor.capacity) {
+		(name, _) if show_sensor_names =>
+			if name.len() > 15 {
+				writer.write_all(name[..14].as_bytes())?;
+				writer.write_all(b"\xE2\x80\xA6")?;
+			}
+			else {
+				write!(writer, "{:^15}", name)?;
+			},
+
+		(_, capacity) if capacity > 0 => {
+			write!(writer, "{:5}", capacity)?;
+			writer.write_all(b"% ")?;
+		},
+
+		(_, _) => {
+			writer.write_all(b"  N/A  ")?;
 		},
 	}
 

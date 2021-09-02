@@ -17,6 +17,7 @@ pub(crate) struct SensorGroup {
 	pub(crate) name: String,
 	pub(crate) temps: Vec<TempSensor>,
 	pub(crate) fans: Vec<FanSensor>,
+	pub(crate) bats: Vec<BatSensor>,
 }
 
 #[derive(Debug)]
@@ -30,6 +31,12 @@ pub(crate) struct TempSensor {
 pub(crate) struct FanSensor {
 	pub(crate) fan_path: Option<std::path::PathBuf>,
 	pub(crate) pwm_path: Option<std::path::PathBuf>,
+	pub(crate) name: Option<String>,
+}
+
+#[derive(Debug)]
+pub(crate) struct BatSensor {
+	pub(crate) capacity_path: std::path::PathBuf,
 	pub(crate) name: Option<String>,
 }
 
@@ -70,6 +77,8 @@ impl<'de> serde::Deserialize<'de> for Config {
 			temps: Vec<InnerTempSensor>,
 			#[serde(default)]
 			fans: Vec<InnerFanSensor>,
+			#[serde(default)]
+			bats: Vec<InnerBatSensor>,
 		}
 
 		#[derive(Debug, serde_derive::Deserialize)]
@@ -92,6 +101,11 @@ impl<'de> serde::Deserialize<'de> for Config {
 			hwmon: String,
 			#[serde(flatten)] num_or_label: HwmonNumOrLabel,
 			name: Option<String>,
+		}
+
+		#[derive(Debug, serde_derive::Deserialize)]
+		struct InnerBatSensor {
+			hwmon: String,
 		}
 
 		#[derive(Debug, serde_derive::Deserialize)]
@@ -159,7 +173,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 
 		let sensors: Result<_, super::Error> =
 			sensors.into_iter()
-			.map(|InnerSensorGroup { name, temps, fans }| {
+			.map(|InnerSensorGroup { name, temps, fans, bats }| {
 				let temps: Result<_, super::Error> =
 					temps.into_iter()
 					.map(|InnerTempSensor { spec, offset, name }| match spec {
@@ -302,10 +316,41 @@ impl<'de> serde::Deserialize<'de> for Config {
 					.collect();
 				let fans = fans?;
 
+				let bats: Result<_, super::Error> =
+					bats.into_iter()
+					.map(|InnerBatSensor { hwmon: sensor_hwmon }| {
+						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {:?} is not defined", sensor_hwmon))?;
+
+						let capacity_path = {
+							let mut capacity_path = hwmon.clone();
+							capacity_path.push("device");
+							capacity_path.push("capacity");
+							capacity_path
+						};
+
+						let name = {
+							let name_path = hwmon.join("name");
+							if let Ok(name) = std::fs::read_to_string(name_path) {
+								Some(name.trim().to_owned())
+							}
+							else {
+								None
+							}
+						};
+
+						Ok(BatSensor {
+							capacity_path,
+							name,
+						})
+					})
+					.collect();
+				let bats = bats?;
+
 				Ok(SensorGroup {
 					name,
 					temps,
 					fans,
+					bats,
 				})
 			})
 			.collect();

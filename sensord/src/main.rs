@@ -83,6 +83,15 @@ fn main() -> Result<(), Error> {
 					}
 				})
 				.collect(),
+			bats:
+				sensor_group.bats.iter()
+				.map(|sensor| {
+					sensord_common::BatSensor {
+						name: sensor.name.as_ref().map_or("", AsRef::as_ref).into(),
+						capacity: 0,
+					}
+				})
+				.collect(),
 		})
 		.collect::<Vec<_>>()
 		.into_boxed_slice();
@@ -158,6 +167,11 @@ fn main() -> Result<(), Error> {
 				let pwm = hwmon::parse_pwm_sensor(sensor.pwm_path.as_deref(), &mut buf)?;
 				message_fan_sensor.fan = fan.unwrap_or_default();
 				message_fan_sensor.pwm = pwm.unwrap_or_default();
+			}
+
+			for (sensor, message_bat_sensor) in sensor_group.bats.iter().zip(&mut *message_sensor_group.bats) {
+				let capacity = hwmon::parse_bat_capacity_sensor(&sensor.capacity_path, &mut buf)?;
+				message_bat_sensor.capacity = capacity.unwrap_or_default();
 			}
 		}
 

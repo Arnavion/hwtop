@@ -22,7 +22,7 @@ hwmon:
     dev_name: 'thinkpad'
 
 
-# List of sensor groups. Each group has a name, zero or more temp sensors, and zero or more fan sensors.
+# List of sensor groups. Each group has a name, zero or more temp sensors, zero or more fan sensors, and zero or more battery sensors.
 #
 # Sensor groups allow you to group sensors from multiple hwmon devices into one logical group.
 sensors:

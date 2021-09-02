@@ -134,6 +134,10 @@ pub(crate) fn parse_pwm_sensor(path: Option<&std::path::Path>, buf: &mut Vec<u8>
 	path.map_or(Ok(None), |path| parse_hwmon(path, buf))
 }
 
+pub(crate) fn parse_bat_capacity_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<u8>, super::Error> {
+	parse_hwmon(path, buf)
+}
+
 fn for_each_line(
 	path: impl AsRef<std::path::Path>,
 	buf: &mut Vec<u8>,
