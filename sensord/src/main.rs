@@ -89,6 +89,7 @@ fn main() -> Result<(), Error> {
 					sensord_common::BatSensor {
 						name: sensor.name.as_ref().map_or("", AsRef::as_ref).into(),
 						capacity: 0,
+						charging: false,
 					}
 				})
 				.collect(),
@@ -172,6 +173,8 @@ fn main() -> Result<(), Error> {
 			for (sensor, message_bat_sensor) in sensor_group.bats.iter().zip(&mut *message_sensor_group.bats) {
 				let capacity = hwmon::parse_bat_capacity_sensor(&sensor.capacity_path, &mut buf)?;
 				message_bat_sensor.capacity = capacity.unwrap_or_default();
+				let charging = hwmon::parse_bat_status_sensor(&sensor.status_path, &mut buf)?;
+				message_bat_sensor.charging = charging.unwrap_or_default();
 			}
 		}
 

@@ -138,6 +138,15 @@ pub(crate) fn parse_bat_capacity_sensor(path: &std::path::Path, buf: &mut Vec<u8
 	parse_hwmon(path, buf)
 }
 
+pub(crate) fn parse_bat_status_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<bool>, super::Error> {
+	if let Some("Charging") = parse_hwmon_raw(path, buf)? {
+		Ok(Some(true))
+	}
+	else {
+		Ok(None)
+	}
+}
+
 fn for_each_line(
 	path: impl AsRef<std::path::Path>,
 	buf: &mut Vec<u8>,
@@ -175,6 +184,11 @@ where
 	T: std::str::FromStr,
 	super::Error: From<<T as std::str::FromStr>::Err>,
 {
+	let value = parse_hwmon_raw(path, buf)?.map(str::parse).transpose()?;
+	Ok(value)
+}
+
+fn parse_hwmon_raw<'a>(path: &std::path::Path, buf: &'a mut Vec<u8>) -> Result<Option<&'a str>, super::Error> {
 	let file = match std::fs::File::open(path) {
 		Ok(file) => file,
 		Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -200,7 +214,6 @@ where
 		};
 
 	let value = std::str::from_utf8(buf)?;
-	let value: T = value.parse()?;
 
 	Ok(Some(value))
 }

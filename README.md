@@ -57,7 +57,7 @@ This repository contains:
 
    CPU:  40.1°C
    GPU:  40.2°C   40.6°C
-   Bat:                        80% 
+   Bat:                     +  80%
 
     eth0:   3.3 Kb/s down    24.1 Kb/s up
    wwan0:   0    b/s down     0    b/s up    [i] toggle sensor names  [q] exit

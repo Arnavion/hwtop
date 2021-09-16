@@ -41,6 +41,7 @@ pub struct FanSensor<'a> {
 pub struct BatSensor<'a> {
 	pub name: std::borrow::Cow<'a, str>,
 	pub capacity: u8,
+	pub charging: bool,
 }
 
 #[derive(Clone, Debug, dbus_pure_macros::AsVariant, serde_derive::Deserialize)]

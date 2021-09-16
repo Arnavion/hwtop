@@ -333,8 +333,8 @@ fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor<'_>, sh
 }
 
 fn print_bat_sensor<W>(mut writer: W, sensor: &sensord_common::BatSensor<'_>, show_sensor_names: bool) -> Result<(), Error> where W: Write {
-	match (&sensor.name, sensor.capacity) {
-		(name, _) if show_sensor_names =>
+	match (&sensor.name, sensor.capacity, sensor.charging) {
+		(name, _, _) if show_sensor_names =>
 			if name.len() > 15 {
 				writer.write_all(name[..14].as_bytes())?;
 				writer.write_all(b"\xE2\x80\xA6")?;
@@ -343,12 +343,13 @@ fn print_bat_sensor<W>(mut writer: W, sensor: &sensord_common::BatSensor<'_>, sh
 				write!(writer, "{:^15}", name)?;
 			},
 
-		(_, capacity) if capacity > 0 => {
-			write!(writer, "{:5}", capacity)?;
+		(_, capacity, charging) if capacity > 0 => {
+			writer.write_all(if charging { b"+" } else { b"-" })?;
+			write!(writer, "{:4}", capacity)?;
 			writer.write_all(b"% ")?;
 		},
 
-		(_, _) => {
+		(_, _, _) => {
 			writer.write_all(b"  N/A  ")?;
 		},
 	}

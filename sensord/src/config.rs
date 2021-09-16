@@ -37,6 +37,7 @@ pub(crate) struct FanSensor {
 #[derive(Debug)]
 pub(crate) struct BatSensor {
 	pub(crate) capacity_path: std::path::PathBuf,
+	pub(crate) status_path: std::path::PathBuf,
 	pub(crate) name: Option<String>,
 }
 
@@ -321,10 +322,18 @@ impl<'de> serde::Deserialize<'de> for Config {
 					.map(|InnerBatSensor { hwmon: sensor_hwmon }| {
 						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {:?} is not defined", sensor_hwmon))?;
 
+						let mut device_path = hwmon.clone();
+						device_path.push("device");
+
 						let capacity_path = {
-							let mut capacity_path = hwmon.clone();
-							capacity_path.push("device");
+							let mut capacity_path = device_path.clone();
 							capacity_path.push("capacity");
+							capacity_path
+						};
+
+						let status_path = {
+							let mut capacity_path = device_path;
+							capacity_path.push("status");
 							capacity_path
 						};
 
@@ -340,6 +349,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 
 						Ok(BatSensor {
 							capacity_path,
+							status_path,
 							name,
 						})
 					})
