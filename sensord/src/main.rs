@@ -183,16 +183,15 @@ fn main() -> Result<(), Error> {
 				if previous_network.rx == 0 && previous_network.tx == 0 {
 					(0., 0.)
 				}
-				else {
+				else if let Some(duration) = network.now.checked_duration_since(previous_network.now) {
 					#[allow(clippy::cast_precision_loss)]
-					let rx =
-						(network.rx - previous_network.rx) as f64 /
-						(network.now.duration_since(previous_network.now).as_millis() as f64 / 1000.);
+					let rx = (network.rx - previous_network.rx) as f64 / (duration.as_millis() as f64 / 1000.);
 					#[allow(clippy::cast_precision_loss)]
-					let tx =
-						(network.tx - previous_network.tx) as f64 /
-						(network.now.duration_since(previous_network.now).as_millis() as f64 / 1000.);
+					let tx = (network.tx - previous_network.tx) as f64 / (duration.as_millis() as f64 / 1000.);
 					(rx, tx)
+				}
+				else {
+					(0., 0.)
 				};
 
 			*previous_network = network;
