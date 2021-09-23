@@ -7,13 +7,11 @@ This repository contains:
 
 # Installation
 
-1. Build and install the `sensord` and `hwtop` binaries (to `/usr/local/bin` and `~/bin` respectively) and the `sensord` systemd service and D-Bus config files:
+1. Build and install the `sensord` and `hwtop` binaries (to `/usr/local/bin`) and the `sensord` systemd service and D-Bus config files:
 
    ```sh
-   make install
+   sudo make install
    ```
-
-   Make sure to run it as your regular user, ie not as root and without `sudo`.
 
 1. Create `sensord`'s config file at `/etc/sensord/config.yaml` See the examples under `sensord/config-examples/` for reference.
 
