@@ -244,9 +244,9 @@ fn interval(
 		}
 
 		let iteration_end = std::time::Instant::now();
-		let sleep_duration = (iteration_start + interval) - iteration_end;
-
-		std::thread::sleep(sleep_duration);
+		if let Some(sleep_duration) = (iteration_start + interval).checked_duration_since(iteration_end) {
+			std::thread::sleep(sleep_duration);
+		}
 	}
 
 	Ok(())
