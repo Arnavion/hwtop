@@ -1,4 +1,4 @@
-.PHONY: build clean install test
+.PHONY: clean default install test
 
 default: target/release/hwtop target/release/sensord
 

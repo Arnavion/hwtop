@@ -58,7 +58,7 @@ fn main() -> Result<(), Error> {
 	let mut cpus: Box<[(hwmon::Cpu, f64)]> = vec![(Default::default(), 0.); num_cpus].into_boxed_slice();
 	let mut message_cpus: Box<[sensord_common::Cpu]> = vec![Default::default(); num_cpus].into_boxed_slice();
 
-	let num_cpus: u32 = std::convert::TryInto::try_into(num_cpus)?;
+	let num_cpus: u32 = num_cpus.try_into()?;
 
 	let mut message_sensor_groups: Box<[sensord_common::SensorGroup<'_>]> =
 		config.sensors.iter()

@@ -2,7 +2,7 @@
 name = "sensord-common"
 version = "0.1.0"
 authors = ["Arnavion <arnavion@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
