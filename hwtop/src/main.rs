@@ -156,7 +156,7 @@ fn main() -> Result<(), Error> {
 			for sensor_group in &*message.sensors {
 				output.write_all(b"\r\n")?;
 
-				write!(output, "{:>max_sensor_group_name_width$}", sensor_group.name, max_sensor_group_name_width = max_sensor_group_name_width)?;
+				write!(output, "{:>max_sensor_group_name_width$}", sensor_group.name)?;
 				output.write_all(b": ")?;
 
 				for (i, sensor) in sensor_group.temps.iter().enumerate() {
@@ -241,19 +241,19 @@ fn print_cpu<W>(mut writer: W, id_and_frequency: Option<(usize, f64)>, usage: f6
 	writer.write_all(b"m")?;
 
 	if let Some((id, _)) = id_and_frequency {
-		write!(writer, "{:3}", id)?;
+		write!(writer, "{id:3}")?;
 		writer.write_all(b": ")?;
 	}
 	else {
 		writer.write_all(b"Avg: ")?;
 	}
 
-	write!(writer, "{:5.1}", usage)?;
+	write!(writer, "{usage:5.1}")?;
 	writer.write_all(b"% ")?;
 
 	if let Some((_, frequency)) = id_and_frequency {
 		if frequency < 999.95 {
-			write!(writer, "{:5.1}", frequency)?;
+			write!(writer, "{frequency:5.1}")?;
 			writer.write_all(b" MHz")?;
 		}
 		else {
@@ -292,11 +292,11 @@ fn print_temp_sensor<W>(mut writer: W, sensor: &sensord_common::TempSensor<'_>, 
 				writer.write_all(b"\xE2\x80\xA6")?;
 			}
 			else {
-				write!(writer, "{:^7}", name)?;
+				write!(writer, "{name:^7}")?;
 			},
 
 		(_, temp) if temp > 0. => {
-			write!(writer, "{:5.1}", temp)?;
+			write!(writer, "{temp:5.1}")?;
 			writer.write_all(b"\xC2\xB0C")?;
 		},
 
@@ -318,11 +318,11 @@ fn print_fan_sensor<W>(mut writer: W, sensor: &sensord_common::FanSensor<'_>, sh
 				writer.write_all(b"\xE2\x80\xA6")?;
 			}
 			else {
-				write!(writer, "{:^15}", name)?;
+				write!(writer, "{name:^15}")?;
 			},
 		_ => {
 			let pwm = 100. * f64::from(sensor.pwm) / 255.;
-			write!(writer, "{:3.0}", pwm)?;
+			write!(writer, "{pwm:3.0}")?;
 			writer.write_all(b"% (")?;
 			write!(writer, "{:4}", sensor.fan)?;
 			writer.write_all(b" RPM)")?;
@@ -340,12 +340,12 @@ fn print_bat_sensor<W>(mut writer: W, sensor: &sensord_common::BatSensor<'_>, sh
 				writer.write_all(b"\xE2\x80\xA6")?;
 			}
 			else {
-				write!(writer, "{:^15}", name)?;
+				write!(writer, "{name:^15}")?;
 			},
 
 		(_, capacity, charging) if capacity > 0 => {
 			writer.write_all(if charging { b"+" } else { b"-" })?;
-			write!(writer, "{:4}", capacity)?;
+			write!(writer, "{capacity:4}")?;
 			writer.write_all(b"% ")?;
 		},
 
@@ -358,12 +358,12 @@ fn print_bat_sensor<W>(mut writer: W, sensor: &sensord_common::BatSensor<'_>, sh
 }
 
 fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_network_name_width: usize) -> Result<(), Error> where W: Write {
-	write!(writer, "{:>max_network_name_width$}", network.name, max_network_name_width = max_network_name_width)?;
+	write!(writer, "{:>max_network_name_width$}", network.name)?;
 	writer.write_all(b": ")?;
 
 	let rx_speed = network.rx * 8.;
 	if rx_speed < 999.5 {
-		write!(writer, "{:3.0}", rx_speed)?;
+		write!(writer, "{rx_speed:3.0}")?;
 		writer.write_all(b"    b/s down   ")?;
 	}
 	else if rx_speed < 999_950. {
@@ -381,7 +381,7 @@ fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_ne
 
 	let tx_speed = network.tx * 8.;
 	if tx_speed < 999.5 {
-		write!(writer, "{:3.0}", tx_speed)?;
+		write!(writer, "{tx_speed:3.0}")?;
 		writer.write_all(b"    b/s up")?;
 	}
 	else if tx_speed < 999_950. {
@@ -418,7 +418,7 @@ impl std::fmt::Display for Error {
 
 		let mut source = self.inner.source();
 		while let Some(err) = source {
-			writeln!(f, "caused by: {}", err)?;
+			writeln!(f, "caused by: {err}")?;
 			source = err.source();
 		}
 

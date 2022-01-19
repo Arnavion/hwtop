@@ -150,7 +150,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 						}
 					}
 
-					Err(format!("could not find hwmon named {}", dev_name).into())
+					Err(format!("could not find hwmon named {dev_name}").into())
 				},
 
 				Hwmon::Path(mut dev_path) => {
@@ -179,7 +179,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 					temps.into_iter()
 					.map(|InnerTempSensor { spec, offset, name }| match spec {
 						InnerTempSensorSpec::Hwmon { hwmon: sensor_hwmon, num_or_label } => {
-							let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {:?} is not defined", sensor_hwmon))?;
+							let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {sensor_hwmon:?} is not defined"))?;
 
 							let num = match num_or_label {
 								HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
@@ -214,7 +214,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 							};
 
 							let name = name.or_else(|| num.and_then(|num| {
-								let label_path = hwmon.join(format!("temp{}_label", num));
+								let label_path = hwmon.join(format!("temp{num}_label"));
 								if let Ok(mut label) = std::fs::read_to_string(label_path) {
 									if label.pop() == Some('\n') {
 										Some(label)
@@ -229,7 +229,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 							}));
 
 							Ok(TempSensor {
-								path: num.map(|num| hwmon.join(format!("temp{}_input", num))),
+								path: num.map(|num| hwmon.join(format!("temp{num}_input"))),
 								offset: offset.unwrap_or_default(),
 								name,
 							})
@@ -237,7 +237,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 
 						InnerTempSensorSpec::Thermal { thermal_zone } => {
 							let mut thermal = std::path::Path::new("/sys/class/thermal").to_owned();
-							thermal.push(format!("thermal_zone{}", thermal_zone));
+							thermal.push(format!("thermal_zone{thermal_zone}"));
 
 							let name = name.or_else(|| {
 								let label_path = thermal.join("type");
@@ -264,7 +264,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 				let fans: Result<_, super::Error> =
 					fans.into_iter()
 					.map(|InnerFanSensor { hwmon: sensor_hwmon, num_or_label, name }| {
-						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {:?} is not defined", sensor_hwmon))?;
+						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {sensor_hwmon:?} is not defined"))?;
 
 						let num = match num_or_label {
 							HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
@@ -299,7 +299,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 						};
 
 						let name = name.or_else(|| num.and_then(|num| {
-							let label_path = hwmon.join(format!("fan{}_label", num));
+							let label_path = hwmon.join(format!("fan{num}_label"));
 							if let Ok(label) = std::fs::read_to_string(label_path) {
 								Some(label.trim().to_owned())
 							}
@@ -309,8 +309,8 @@ impl<'de> serde::Deserialize<'de> for Config {
 						}));
 
 						Ok(FanSensor {
-							fan_path: num.map(|num| hwmon.join(format!("fan{}_input", num))),
-							pwm_path: num.map(|num| hwmon.join(format!("pwm{}", num))),
+							fan_path: num.map(|num| hwmon.join(format!("fan{num}_input"))),
+							pwm_path: num.map(|num| hwmon.join(format!("pwm{num}"))),
 							name,
 						})
 					})
@@ -320,7 +320,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 				let bats: Result<_, super::Error> =
 					bats.into_iter()
 					.map(|InnerBatSensor { hwmon: sensor_hwmon }| {
-						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {:?} is not defined", sensor_hwmon))?;
+						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {sensor_hwmon:?} is not defined"))?;
 
 						let mut device_path = hwmon.clone();
 						device_path.push("device");

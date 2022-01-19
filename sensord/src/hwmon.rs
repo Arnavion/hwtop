@@ -34,7 +34,7 @@ pub(crate) fn parse_proc_cpuinfo(cpus: &mut [(Cpu, f64)], proc_cpu_info_line_reg
 			else if let Some(frequency) = captures.name("frequency") {
 				let frequency = std::str::from_utf8(frequency.as_bytes())?;
 				let id = current_id.ok_or("unexpected `cpu MHz` line without corresponding `processor` line")?;
-				cpus.get_mut(id).ok_or_else(|| format!("unexpected CPU ID {}", id))?.1 = frequency.parse()?;
+				cpus.get_mut(id).ok_or_else(|| format!("unexpected CPU ID {id}"))?.1 = frequency.parse()?;
 			}
 		}
 
@@ -64,7 +64,7 @@ pub(crate) fn parse_proc_stat(average_cpu: &mut Cpu, cpus: &mut [(Cpu, f64)], bu
 
 		let cpu =
 			if let Some(id) = id {
-				&mut cpus.get_mut(id).ok_or_else(|| format!("unexpected CPU ID {}", id))?.0
+				&mut cpus.get_mut(id).ok_or_else(|| format!("unexpected CPU ID {id}"))?.0
 			}
 			else {
 				&mut *average_cpu
@@ -95,7 +95,7 @@ pub(crate) fn parse_proc_stat(average_cpu: &mut Cpu, cpus: &mut [(Cpu, f64)], bu
 }
 
 pub(crate) fn parse_scaling_cur_freq(id: usize, cpu_freq: &mut f64, buf: &mut Vec<u8>) -> Result<(), super::Error> {
-	*cpu_freq = parse_hwmon::<f64>(std::path::Path::new(&format!("/sys/devices/system/cpu/cpu{}/cpufreq/scaling_cur_freq", id)), buf)?.unwrap_or_default() / 1000.;
+	*cpu_freq = parse_hwmon::<f64>(std::path::Path::new(&format!("/sys/devices/system/cpu/cpu{id}/cpufreq/scaling_cur_freq")), buf)?.unwrap_or_default() / 1000.;
 
 	Ok(())
 }

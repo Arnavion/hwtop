@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
 		request_name_result
 	};
 	if request_name_result != 1 {
-		return Err(format!("RequestName returned {:?}", request_name_result).into());
+		return Err(format!("RequestName returned {request_name_result:?}").into());
 	}
 
 	dbus_client.set_name("dev.arnavion.sensord.Daemon".to_owned());
@@ -269,7 +269,7 @@ impl std::fmt::Display for Error {
 
 		let mut source = self.inner.source();
 		while let Some(err) = source {
-			writeln!(f, "caused by: {}", err)?;
+			writeln!(f, "caused by: {err}")?;
 			source = err.source();
 		}
 
