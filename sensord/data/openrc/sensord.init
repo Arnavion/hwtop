@@ -2,6 +2,7 @@
 
 command=/usr/local/bin/sensord
 command_args=
+command_user=sensord:sensord
 
 command_background=true
 pidfile="/run/${RC_SVCNAME}.pid"

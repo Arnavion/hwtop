@@ -1,12 +1,56 @@
 [Unit]
 Description=Broadcasts CPU usage, thermal and fan sensors, and network usage information
 
+
 [Service]
 Type=dbus
 BusName=dev.arnavion.sensord.Daemon
 ExecStart=/usr/local/bin/sensord
+User=sensord
+# dbus-daemon cannot be convinced to use a DynamicUser even if User is used to set its name to one that matches the dbus policy.
+# Ref: https://github.com/systemd/systemd/issues/9503
+DynamicUser=no
 Restart=always
 RestartSec=5
+
+# https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Paths
+ProtectProc=invisible
+ProcSubset=all
+
+# https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Capabilities
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Security
+NoNewPrivileges=yes
+
+# https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Process%20Properties
+UMask=0077
+
+# https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Sandboxing
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+PrivateIPC=yes
+PrivateUsers=yes
+ProtectHostname=yes
+ProtectClock=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+SystemCallFilter=@basic-io @file-system @io-event mprotect @network-io @process @signal @timer
+SystemCallArchitectures=native
+
 
 [Install]
 WantedBy=default.target
