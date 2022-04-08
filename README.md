@@ -15,8 +15,6 @@ This repository contains:
 
 1. Create `sensord`'s config file at `/etc/sensord/config.yaml` See the examples under `sensord/config-examples/` for reference.
 
-1. Create `hwtop`'s config file at `~/.config/hwtop/config.yaml` See the examples under `hwtop/config-examples/` for reference.
-
 1. Start the `sensord` service.
 
    systemd:

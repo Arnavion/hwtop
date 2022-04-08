@@ -8,9 +8,7 @@ edition = "2021"
 backtrace = "0.3"
 dbus-pure = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
 dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
-dirs = "4"
 libc = "0.2"
 sensord-common = { path = "../sensord-common" }
 serde = "1"
-serde_derive = "1"
-serde_yaml = "0.8"
+terminal_size = "0.1"

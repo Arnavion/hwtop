@@ -15,14 +15,6 @@ mod terminal;
 use std::io::Write;
 
 fn main() -> Result<(), Error> {
-	let config: Config = {
-		let mut path = dirs::config_dir().ok_or("config dir not defined")?;
-		path.push("hwtop");
-		path.push("config.yaml");
-		let f = std::fs::File::open(path)?;
-		serde_yaml::from_reader(f)?
-	};
-
 	let connection =
 		dbus_pure::Connection::new(
 			dbus_pure::BusPath::System,
@@ -131,11 +123,15 @@ fn main() -> Result<(), Error> {
 
 		output.clear();
 
+
 		output.write_all(b"\x1B[2J\x1B[3J\x1B[1;1H")?;
 
-		let num_rows = (num_cpus + config.cpus.cols - 1) / config.cpus.cols;
+		let terminal_width: usize = terminal_size::terminal_size().map(|(width, _)| width.0).ok_or("not a TTY")?.into();
+		let num_cpu_cols = (terminal_width - 21) / 23 + 1;
+
+		let num_rows = (num_cpus + num_cpu_cols - 1) / num_cpu_cols;
 		for row in 0..num_rows {
-			for col in 0..(config.cpus.cols) {
+			for col in 0..num_cpu_cols {
 				if col > 0 {
 					output.write_all(b"  ")?;
 				}
@@ -207,16 +203,6 @@ fn main() -> Result<(), Error> {
 	}
 
 	Ok(())
-}
-
-#[derive(Debug, serde_derive::Deserialize)]
-pub(crate) struct Config {
-	pub(crate) cpus: Cpus,
-}
-
-#[derive(Debug, serde_derive::Deserialize)]
-pub(crate) struct Cpus {
-	pub(crate) cols: usize,
 }
 
 #[derive(Debug)]

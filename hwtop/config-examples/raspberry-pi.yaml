@@ -1,5 +1,0 @@
-# This example config is for a Raspberry Pi 3.
-
-# CPU has 4 threads. Show them in four columns of one thread each.
-cpus:
-  cols: 4
