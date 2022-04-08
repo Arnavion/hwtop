@@ -11,6 +11,5 @@ dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "ma
 libc = "0.2"
 regex = "1"
 sensord-common = { path = "../sensord-common" }
-serde = "1"
-serde_derive = "1"
+serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.8"

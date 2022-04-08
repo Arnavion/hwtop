@@ -6,7 +6,7 @@ pub(crate) struct Config {
 	pub(crate) networks: Vec<Network>,
 }
 
-#[derive(Debug, Default, serde_derive::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 pub(crate) struct Cpus {
 	#[serde(default)]
 	pub(crate) use_sysfs: bool,
@@ -50,7 +50,7 @@ pub(crate) struct Network {
 
 impl<'de> serde::Deserialize<'de> for Config {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::Deserializer<'de> {
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		struct InnerConfig {
 			interval: Option<f32>,
 			#[serde(default)]
@@ -63,7 +63,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 			networks: Vec<String>,
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		enum Hwmon {
 			#[serde(rename = "dev_name")]
 			Name(String),
@@ -71,7 +71,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 			Path(std::path::PathBuf),
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		struct InnerSensorGroup {
 			name: String,
 			#[serde(default)]
@@ -82,7 +82,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 			bats: Vec<InnerBatSensor>,
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		struct InnerTempSensor {
 			#[serde(flatten)]
 			spec: InnerTempSensorSpec,
@@ -90,36 +90,36 @@ impl<'de> serde::Deserialize<'de> for Config {
 			name: Option<String>,
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		#[serde(untagged)]
 		enum InnerTempSensorSpec {
 			Hwmon { hwmon: String, #[serde(flatten)] num_or_label: HwmonNumOrLabel },
 			Thermal { thermal_zone: u8 },
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		struct InnerFanSensor {
 			hwmon: String,
 			#[serde(flatten)] num_or_label: HwmonNumOrLabel,
 			name: Option<String>,
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		struct InnerBatSensor {
 			hwmon: String,
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		struct HwmonNum {
 			num: u8,
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		struct HwmonLabel {
 			label: String,
 		}
 
-		#[derive(Debug, serde_derive::Deserialize)]
+		#[derive(Debug, serde::Deserialize)]
 		#[serde(untagged)]
 		enum HwmonNumOrLabel {
 			Num(HwmonNum),
