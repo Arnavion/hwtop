@@ -108,7 +108,7 @@ fn main() -> Result<(), Error> {
 				show_sensor_names
 			},
 
-			Event::Stdin(b'i') => !show_sensor_names,
+			Event::Stdin(b's') => !show_sensor_names,
 
 			Event::Stdin(b'q' | b'\x1B') => break,
 
@@ -196,7 +196,7 @@ fn main() -> Result<(), Error> {
 			}
 		}
 
-		output.write_all(b"    [i] toggle sensor names  [q] exit")?;
+		output.write_all(b"    [s]ensor names  [q]uit")?;
 
 		stdout.write_all(&output)?;
 		stdout.flush()?;
