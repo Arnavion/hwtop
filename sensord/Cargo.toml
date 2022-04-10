@@ -5,7 +5,6 @@ authors = ["Arnavion <arnavion@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-backtrace = "0.3"
 dbus-pure = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
 dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
 libc = "0.2"

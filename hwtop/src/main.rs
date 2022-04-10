@@ -388,8 +388,6 @@ fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_ne
 
 struct Error {
 	inner: Box<dyn std::error::Error>,
-	#[cfg(debug_assertions)]
-	backtrace: backtrace::Backtrace,
 }
 
 impl std::fmt::Debug for Error {
@@ -408,12 +406,6 @@ impl std::fmt::Display for Error {
 			source = err.source();
 		}
 
-		#[cfg(debug_assertions)]
-		{
-			writeln!(f)?;
-			writeln!(f, "{:?}", self.backtrace)?;
-		}
-
 		Ok(())
 	}
 }
@@ -422,8 +414,6 @@ impl<E> From<E> for Error where E: Into<Box<dyn std::error::Error>> {
 	fn from(err: E) -> Self {
 		Error {
 			inner: err.into(),
-			#[cfg(debug_assertions)]
-			backtrace: Default::default(),
 		}
 	}
 }
