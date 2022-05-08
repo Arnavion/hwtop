@@ -133,16 +133,16 @@ impl<'de> serde::Deserialize<'de> for Config {
 		let interval = std::time::Duration::from_millis((interval * 1000.) as u64);
 
 		let mut already_discovered_hwmon: std::collections::BTreeSet<_> = Default::default();
-		let hwmon: Result<std::collections::BTreeMap<_, _>, super::Error> =
+		let hwmon: Result<std::collections::BTreeMap<_, _>, crate::Error> =
 			hwmon.into_iter()
 			.map(|(hwmon_name, hwmon)| match hwmon {
 				Hwmon::Name(dev_name) => {
-					for dir in std::fs::read_dir("/sys/class/hwmon")? {
+					for dir in crate::std2::fs::read_dir("/sys/class/hwmon".as_ref())? {
 						let dir = dir?.path();
 						let name_file = dir.join("name");
 						if let Ok(mut name) = std::fs::read_to_string(name_file) {
 							if name.pop() == Some('\n') && name == dev_name {
-								let dir = std::fs::canonicalize(dir)?;
+								let dir = crate::std2::fs::canonicalize(&dir)?;
 								if already_discovered_hwmon.insert(dir.clone()) {
 									return Ok((hwmon_name, dir));
 								}
@@ -150,36 +150,36 @@ impl<'de> serde::Deserialize<'de> for Config {
 						}
 					}
 
-					Err(format!("could not find hwmon named {dev_name}").into())
+					Err(crate::Error::Other(format!("could not find hwmon named {dev_name}").into()))
 				},
 
 				Hwmon::Path(mut dev_path) => {
 					dev_path.push("hwmon");
-					if let Some(dir) = std::fs::read_dir(&dev_path)?.next() {
-						let dir = std::fs::canonicalize(dir?.path())?;
+					if let Some(dir) = crate::std2::fs::read_dir(&dev_path)?.next() {
+						let dir = crate::std2::fs::canonicalize(&dir?.path())?;
 						if already_discovered_hwmon.insert(dir.clone()) {
 							Ok((hwmon_name, dir))
 						}
 						else {
-							Err(format!("hwmon path {} was already found before", dir.display()).into())
+							Err(crate::Error::Other(format!("hwmon path {} was already found before", dir.display()).into()))
 						}
 					}
 					else {
-						Err(format!("could not find hwmon path under {}", dev_path.display()).into())
+						Err(crate::Error::Other(format!("could not find hwmon path under {}", dev_path.display()).into()))
 					}
 				},
 			})
 			.collect();
 		let hwmon = hwmon.map_err(serde::de::Error::custom)?;
 
-		let sensors: Result<_, super::Error> =
+		let sensors: Result<_, crate::Error> =
 			sensors.into_iter()
 			.map(|InnerSensorGroup { name, temps, fans, bats }| {
-				let temps: Result<_, super::Error> =
+				let temps: Result<_, crate::Error> =
 					temps.into_iter()
 					.map(|InnerTempSensor { spec, offset, name }| match spec {
 						InnerTempSensorSpec::Hwmon { hwmon: sensor_hwmon, num_or_label } => {
-							let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {sensor_hwmon:?} is not defined"))?;
+							let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| crate::Error::Other(format!("hwmon {sensor_hwmon:?} is not defined").into()))?;
 
 							let num = match num_or_label {
 								HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
@@ -187,7 +187,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 								HwmonNumOrLabel::Label(HwmonLabel { label: expected_label }) => {
 									let mut num = None;
 
-									for entry in std::fs::read_dir(hwmon)? {
+									for entry in crate::std2::fs::read_dir(hwmon)? {
 										let entry = entry?.path();
 
 										let entry_file_name = match entry.file_name().and_then(std::ffi::OsStr::to_str) {
@@ -261,10 +261,10 @@ impl<'de> serde::Deserialize<'de> for Config {
 					.collect();
 				let temps = temps?;
 
-				let fans: Result<_, super::Error> =
+				let fans: Result<_, crate::Error> =
 					fans.into_iter()
 					.map(|InnerFanSensor { hwmon: sensor_hwmon, num_or_label, name }| {
-						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {sensor_hwmon:?} is not defined"))?;
+						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| crate::Error::Other(format!("hwmon {sensor_hwmon:?} is not defined").into()))?;
 
 						let num = match num_or_label {
 							HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
@@ -272,7 +272,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 							HwmonNumOrLabel::Label(HwmonLabel { label: expected_label }) => {
 								let mut num = None;
 
-								for entry in std::fs::read_dir(hwmon)? {
+								for entry in crate::std2::fs::read_dir(hwmon)? {
 									let entry = entry?.path();
 
 									let entry_file_name = match entry.file_name().and_then(std::ffi::OsStr::to_str) {
@@ -317,10 +317,10 @@ impl<'de> serde::Deserialize<'de> for Config {
 					.collect();
 				let fans = fans?;
 
-				let bats: Result<_, super::Error> =
+				let bats: Result<_, crate::Error> =
 					bats.into_iter()
 					.map(|InnerBatSensor { hwmon: sensor_hwmon }| {
-						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| format!("hwmon {sensor_hwmon:?} is not defined"))?;
+						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| crate::Error::Other(format!("hwmon {sensor_hwmon:?} is not defined").into()))?;
 
 						let mut device_path = hwmon.clone();
 						device_path.push("device");

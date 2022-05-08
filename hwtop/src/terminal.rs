@@ -4,7 +4,7 @@ pub(crate) struct Terminal {
 }
 
 impl Terminal {
-	pub(crate) fn new(stdout: &mut std::io::StdoutLock<'_>) -> Result<Self, super::Error> {
+	pub(crate) fn new(stdout: &mut std::io::StdoutLock<'_>) -> Result<Self, crate::Error> {
 		let raw_mode = RawMode::new(stdout)?;
 		let alternate_screen = AlternateScreen::new(stdout)?;
 
@@ -21,7 +21,7 @@ struct RawMode {
 }
 
 impl RawMode {
-	fn new(stdout: &mut std::io::StdoutLock<'_>) -> Result<Self, super::Error> {
+	fn new(stdout: &mut std::io::StdoutLock<'_>) -> Result<Self, crate::Error> {
 		let stdout_fd = std::os::unix::io::AsRawFd::as_raw_fd(stdout);
 
 		let original_termios = unsafe {
@@ -63,7 +63,7 @@ struct AlternateScreen {
 }
 
 impl AlternateScreen {
-	fn new(stdout: &mut std::io::StdoutLock<'_>) -> Result<Self, super::Error> {
+	fn new(stdout: &mut std::io::StdoutLock<'_>) -> Result<Self, crate::Error> {
 		std::io::Write::write_all(stdout, b"\x1B[?1049h")?;
 
 		let stdout_fd = std::os::unix::io::AsRawFd::as_raw_fd(stdout);

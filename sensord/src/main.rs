@@ -12,18 +12,21 @@ mod config;
 
 mod hwmon;
 
+mod std2;
+
 fn main() -> Result<(), Error> {
-	let config: config::Config = {
-		let f = std::fs::File::open("/etc/sensord/config.yaml")?;
-		serde_yaml::from_reader(f)?
-	};
+	let config: config::Config = Error::with_path_context("/etc/sensord/config.yaml".as_ref(), |path| {
+		let f = std::fs::File::open(path)?;
+		let config = serde_yaml::from_reader(f)?;
+		Ok(config)
+	})?;
 
 	let connection =
 		dbus_pure::Connection::new(
 			dbus_pure::BusPath::System,
 			dbus_pure::SaslAuthType::Uid,
-		)?;
-	let mut dbus_client = dbus_pure::Client::new(connection)?;
+		).map_err(|err| Error::Other(err.into()))?;
+	let mut dbus_client = dbus_pure::Client::new(connection).map_err(|err| Error::Other(err.into()))?;
 
 	let request_name_result = {
 		let obj = OrgFreeDesktopDbusObject {
@@ -35,17 +38,17 @@ fn main() -> Result<(), Error> {
 				&mut dbus_client,
 				"dev.arnavion.sensord.Daemon",
 				4, // DBUS_NAME_FLAG_DO_NOT_QUEUE
-			)?;
+			).map_err(|err| Error::Other(err.into()))?;
 		request_name_result
 	};
 	if request_name_result != 1 {
-		return Err(format!("RequestName returned {request_name_result:?}").into());
+		return Err(Error::Other(format!("RequestName returned {request_name_result:?}").into()));
 	}
 
 	dbus_client.set_name("dev.arnavion.sensord.Daemon".to_owned());
 
-	let sys_devices_system_cpu_present_line_regex = regex::bytes::Regex::new(r"^0-(?P<high>\d+)$")?;
-	let proc_cpu_info_line_regex = regex::bytes::Regex::new(r"^(?:(?:processor\s*:\s*(?P<id>\d+))|(?:cpu MHz\s*:\s*(?P<frequency>\d+(?:\.\d+)?)))$")?;
+	let sys_devices_system_cpu_present_line_regex = regex::bytes::Regex::new(r"^0-(?P<high>\d+)$").expect("hard-coded regex is expected to be valid");
+	let proc_cpu_info_line_regex = regex::bytes::Regex::new(r"^(?:(?:processor\s*:\s*(?P<id>\d+))|(?:cpu MHz\s*:\s*(?P<frequency>\d+(?:\.\d+)?)))$").expect("hard-coded regex is expected to be valid");
 
 	let mut buf = vec![0_u8; 512];
 
@@ -58,7 +61,7 @@ fn main() -> Result<(), Error> {
 	let mut cpus: Box<[(hwmon::Cpu, f64)]> = vec![(Default::default(), 0.); num_cpus].into_boxed_slice();
 	let mut message_cpus: Box<[sensord_common::Cpu]> = vec![Default::default(); num_cpus].into_boxed_slice();
 
-	let num_cpus: u32 = num_cpus.try_into()?;
+	let num_cpus = u32::try_from(num_cpus).map_err(|err| Error::Other(err.into()))?;
 
 	let mut message_sensor_groups: Box<[sensord_common::SensorGroup<'_>]> =
 		config.sensors.iter()
@@ -223,7 +226,7 @@ fn main() -> Result<(), Error> {
 				fields: (&[][..]).into(),
 			},
 			Some(&body),
-		)?;
+		).map_err(|err| Error::Other(err.into()))?;
 
 		Ok(false)
 	})?;
@@ -251,8 +254,15 @@ fn interval(
 	Ok(())
 }
 
-struct Error {
-	inner: Box<dyn std::error::Error>,
+enum Error {
+	Path(Box<dyn std::error::Error>, std::path::PathBuf),
+	Other(Box<dyn std::error::Error>),
+}
+
+impl Error {
+	fn with_path_context<'a, T: 'a>(path: &'a std::path::Path, f: impl FnOnce(&'a std::path::Path) -> Result<T, Box<dyn std::error::Error>>) -> Result<T, Self> {
+		f(path).map_err(|err| Error::Path(err, path.to_owned()))
+	}
 }
 
 impl std::fmt::Debug for Error {
@@ -263,23 +273,22 @@ impl std::fmt::Debug for Error {
 
 impl std::fmt::Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		writeln!(f, "{}", self.inner)?;
-
-		let mut source = self.inner.source();
+		let mut source = match self {
+			Error::Path(err, path) => {
+				writeln!(f, "error for path {}: {err}", path.display())?;
+				err.source()
+			},
+			Error::Other(err) => {
+				writeln!(f, "{err}")?;
+				err.source()
+			},
+		};
 		while let Some(err) = source {
 			writeln!(f, "caused by: {err}")?;
 			source = err.source();
 		}
 
 		Ok(())
-	}
-}
-
-impl<E> From<E> for Error where E: Into<Box<dyn std::error::Error>> {
-	fn from(err: E) -> Self {
-		Error {
-			inner: err.into(),
-		}
 	}
 }
 
