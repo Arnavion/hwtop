@@ -3,9 +3,7 @@
 #![allow(
 	clippy::default_trait_access,
 	clippy::let_and_return,
-	clippy::shadow_unrelated,
 	clippy::too_many_lines,
-	clippy::use_self,
 )]
 
 mod config;

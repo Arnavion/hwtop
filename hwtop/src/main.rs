@@ -1,13 +1,9 @@
 #![deny(rust_2018_idioms, warnings)]
 #![deny(clippy::all, clippy::pedantic)]
 #![allow(
-	clippy::default_trait_access,
 	clippy::let_underscore_drop,
 	clippy::let_unit_value,
-	clippy::shadow_unrelated,
 	clippy::too_many_lines,
-	clippy::unneeded_field_pattern,
-	clippy::use_self,
 )]
 
 mod terminal;
