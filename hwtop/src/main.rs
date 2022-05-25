@@ -61,8 +61,7 @@ fn main() -> Result<(), Error> {
 	});
 
 	std::thread::spawn(move || {
-		let stdin = std::io::stdin();
-		let mut stdin = stdin.lock();
+		let mut stdin = std::io::stdin().lock();
 
 		let mut buf = [0_u8; 1];
 
@@ -78,8 +77,7 @@ fn main() -> Result<(), Error> {
 		std::process::exit(1);
 	});
 
-	let stdout = std::io::stdout();
-	let mut stdout = stdout.lock();
+	let mut stdout = std::io::stdout().lock();
 
 	let _terminal = terminal::Terminal::new(&mut stdout)?;
 
