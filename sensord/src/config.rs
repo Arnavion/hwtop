@@ -58,6 +58,8 @@ impl<'de> serde::Deserialize<'de> for Config {
 			#[serde(default)]
 			hwmon: std::collections::BTreeMap<String, Hwmon>,
 			#[serde(default)]
+			power_supply: std::collections::BTreeMap<String, String>,
+			#[serde(default)]
 			sensors: Vec<InnerSensorGroup>,
 			#[serde(default)]
 			networks: Vec<String>,
@@ -105,8 +107,11 @@ impl<'de> serde::Deserialize<'de> for Config {
 		}
 
 		#[derive(Debug, serde::Deserialize)]
-		struct InnerBatSensor {
-			hwmon: String,
+		enum InnerBatSensor {
+			#[serde(rename = "hwmon")]
+			Hwmon(String),
+			#[serde(rename = "power_supply")]
+			PowerSupply(String),
 		}
 
 		#[derive(Debug, serde::Deserialize)]
@@ -126,7 +131,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 			Label(HwmonLabel),
 		}
 
-		let InnerConfig { interval, cpus, hwmon, sensors, networks } = serde::Deserialize::deserialize(deserializer)?;
+		let InnerConfig { interval, cpus, hwmon, power_supply, sensors, networks } = serde::Deserialize::deserialize(deserializer)?;
 
 		let interval = interval.unwrap_or(1.);
 		#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -171,6 +176,16 @@ impl<'de> serde::Deserialize<'de> for Config {
 			})
 			.collect();
 		let hwmon = hwmon.map_err(serde::de::Error::custom)?;
+
+		let power_supply: Result<std::collections::BTreeMap<_, _>, crate::Error> =
+			power_supply.into_iter()
+			.map(|(power_supply_name, dev_name)| {
+				let dir = std::path::Path::new("/sys/class/power_supply").join(dev_name);
+				let dir = crate::std2::fs::canonicalize(&dir)?;
+				Ok((power_supply_name, dir))
+			})
+			.collect();
+		let power_supply = power_supply.map_err(serde::de::Error::custom)?;
 
 		let sensors: Result<_, crate::Error> =
 			sensors.into_iter()
@@ -319,39 +334,64 @@ impl<'de> serde::Deserialize<'de> for Config {
 
 				let bats: Result<_, crate::Error> =
 					bats.into_iter()
-					.map(|InnerBatSensor { hwmon: sensor_hwmon }| {
-						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| crate::Error::Other(format!("hwmon {sensor_hwmon:?} is not defined").into()))?;
+					.map(|bat| match bat {
+						InnerBatSensor::Hwmon(sensor_hwmon) => {
+							let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| crate::Error::Other(format!("hwmon {sensor_hwmon:?} is not defined").into()))?;
 
-						let mut device_path = hwmon.clone();
-						device_path.push("device");
+							let mut device_path = hwmon.clone();
+							device_path.push("device");
 
-						let capacity_path = {
-							let mut capacity_path = device_path.clone();
-							capacity_path.push("capacity");
-							capacity_path
-						};
+							let capacity_path = device_path.join("capacity");
 
-						let status_path = {
-							let mut capacity_path = device_path;
-							capacity_path.push("status");
-							capacity_path
-						};
+							let status_path = {
+								let mut status_path = device_path;
+								status_path.push("status");
+								status_path
+							};
 
-						let name = {
-							let name_path = hwmon.join("name");
-							if let Ok(name) = std::fs::read_to_string(name_path) {
-								Some(name.trim().to_owned())
-							}
-							else {
-								None
-							}
-						};
+							let name = {
+								let name_path = hwmon.join("name");
+								if let Ok(name) = std::fs::read_to_string(name_path) {
+									Some(name.trim().to_owned())
+								}
+								else {
+									None
+								}
+							};
 
-						Ok(BatSensor {
-							capacity_path,
-							status_path,
-							name,
-						})
+							Ok(BatSensor {
+								capacity_path,
+								status_path,
+								name,
+							})
+						},
+
+						InnerBatSensor::PowerSupply(sensor_power_supply) => {
+							let power_supply =
+								power_supply.get(&sensor_power_supply)
+								.ok_or_else(|| crate::Error::Other(format!("power_supply {sensor_power_supply:?} is not defined").into()))?;
+
+							let capacity_path = power_supply.join("capacity");
+
+							let status_path = power_supply.join("status");
+
+							let name = {
+								let mut name_path = power_supply.join("device");
+								name_path.push("name");
+								if let Ok(name) = std::fs::read_to_string(name_path) {
+									Some(name.trim().to_owned())
+								}
+								else {
+									None
+								}
+							};
+
+							Ok(BatSensor {
+								capacity_path,
+								status_path,
+								name,
+							})
+						},
 					})
 					.collect();
 				let bats = bats?;
