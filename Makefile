@@ -21,6 +21,7 @@ install: target/release/hwtop target/release/sensord
 			/usr/sbin/useradd --system --comment 'dev.arnavion.sensord' --shell /sbin/nologin --no-create-home sensord; \
 		fi; \
 	fi
+	mkdir -p /etc/dbus-1/system.d/
 	cp -f sensord/data/sensord.dbus /etc/dbus-1/system.d/sensord.conf
 
 test:
