@@ -11,4 +11,4 @@ libc = "0.2"
 regex = "1"
 sensord-common = { path = "../sensord-common" }
 serde = { version = "1", features = ["derive"] }
-serde_yaml = "0.8"
+toml = "0.5"

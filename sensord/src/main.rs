@@ -13,9 +13,9 @@ mod hwmon;
 mod std2;
 
 fn main() -> Result<(), Error> {
-	let config: config::Config = Error::with_path_context("/etc/sensord/config.yaml".as_ref(), |path| {
-		let f = std::fs::File::open(path)?;
-		let config = serde_yaml::from_reader(f)?;
+	let config: config::Config = Error::with_path_context("/etc/sensord/config.toml".as_ref(), |path| {
+		let config = std::fs::read(path)?;
+		let config = toml::from_slice(&config)?;
 		Ok(config)
 	})?;
 

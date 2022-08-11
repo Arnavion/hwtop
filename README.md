@@ -13,7 +13,7 @@ This repository contains:
    sudo make install
    ```
 
-1. Create `sensord`'s config file at `/etc/sensord/config.yaml` See the examples under `sensord/config-examples/` for reference.
+1. Create `sensord`'s config file at `/etc/sensord/config.toml` See the examples under `sensord/config-examples/` for reference.
 
 1. Start the `sensord` service.
 
@@ -44,7 +44,7 @@ This repository contains:
 
 (The actual output uses colors that are not visible here.)
 
-1. Output for the device corresponding to `pinephone.yaml`:
+1. Output for the device corresponding to `pinephone.toml`:
 
    ```
      0:   4.0% 648.0 MHz    2:  15.5% 648.0 MHz
@@ -59,7 +59,7 @@ This repository contains:
    wwan0:   0    b/s down     0    b/s up    [i] toggle sensor names  [q] exit
    ```
 
-1. Output for the device corresponding to `raspberry-pi.yaml`
+1. Output for the device corresponding to `raspberry-pi.toml`
 
    ```
      0:   0.0% 600.0 MHz    1:   1.0% 600.0 MHz    2:   0.0% 600.0 MHz    3:   3.0% 600.0 MHz
@@ -70,7 +70,7 @@ This repository contains:
    eth0:   2.1 KB/s down     1.5 KB/s up    [i] toggle sensor names  [q] exit
    ```
 
-1. Output for the device corresponding to `t61.yaml`
+1. Output for the device corresponding to `t61.toml`
 
    ```
      0:   0.0% 797.9 MHz    1:   7.0% 797.9 MHz
@@ -84,7 +84,7 @@ This repository contains:
    enp0s25:    140 B/s down     1.0 KB/s up    [i] toggle sensor names  [q] exit
    ```
 
-1. Output for the device corresponding to `threadripper2.yaml`
+1. Output for the device corresponding to `threadripper2.toml`
 
    ```
      0:   2.0% 2.086 GHz    6:   0.0% 2.313 GHz   12:   0.0% 2.053 GHz   18:  18.0% 3.204 GHz

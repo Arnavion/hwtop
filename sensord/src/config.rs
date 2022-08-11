@@ -360,7 +360,7 @@ struct InnerConfig {
 	hwmon: std::collections::BTreeMap<String, Hwmon>,
 	#[serde(default)]
 	power_supply: std::collections::BTreeMap<String, String>,
-	#[serde(default)]
+	#[serde(default, rename = "sensor")]
 	sensors: Vec<InnerSensorGroup>,
 	#[serde(default)]
 	networks: Vec<String>,
@@ -429,7 +429,7 @@ mod tests {
 
 	#[test]
 	fn microsoft_surfacert() {
-		test_inner("microsoft-surfacert.yaml", InnerConfig {
+		test_inner("microsoft-surfacert.toml", InnerConfig {
 			interval: None,
 			cpus: Cpus {
 				use_sysfs: false,
@@ -481,7 +481,7 @@ mod tests {
 
 	#[test]
 	fn pinephone() {
-		test_inner("pinephone.yaml", InnerConfig {
+		test_inner("pinephone.toml", InnerConfig {
 			interval: None,
 			cpus: Cpus {
 				use_sysfs: true,
@@ -550,7 +550,7 @@ mod tests {
 
 	#[test]
 	fn raspberry_pi() {
-		test_inner("raspberry-pi.yaml", InnerConfig {
+		test_inner("raspberry-pi.toml", InnerConfig {
 			interval: None,
 			cpus: Cpus {
 				use_sysfs: true,
@@ -591,7 +591,7 @@ mod tests {
 
 	#[test]
 	fn t61() {
-		test_inner("t61.yaml", InnerConfig {
+		test_inner("t61.toml", InnerConfig {
 			interval: None,
 			cpus: Cpus {
 				use_sysfs: false,
@@ -767,7 +767,7 @@ mod tests {
 
 	#[test]
 	fn threadripper2() {
-		test_inner("threadripper2.yaml", InnerConfig {
+		test_inner("threadripper2.toml", InnerConfig {
 			interval: None,
 			cpus: Cpus {
 				use_sysfs: false,
@@ -943,8 +943,8 @@ mod tests {
 		let mut path: std::path::PathBuf = std::env::var_os("CARGO_MANIFEST_DIR").unwrap().into();
 		path.push("config-examples");
 		path.push(filename);
-		let f = std::fs::File::open(path).unwrap();
-		let actual = serde_yaml::from_reader(f).unwrap();
+		let actual = std::fs::read(path).unwrap();
+		let actual = toml::from_slice(&actual).unwrap();
 		assert_eq!(expected, actual);
 	}
 }

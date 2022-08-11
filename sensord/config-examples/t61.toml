@@ -1,0 +1,85 @@
+# This example config is for a Thinkpad T61 laptop.
+
+
+# Monitor usage of the network interface named `enp0s25`
+networks = [
+	"enp0s25",
+]
+
+
+# Sensors are read using the hwmon sysfs interface. Every hwmon device has a corresponding device name.
+# So define some hwmon devices corresponding to the device names.
+#
+# Each entry here corresponds to a path under `/sys/class/hwmon`. The `dev_name` is the value of `/sys/class/hwmon/hwmon*/name`
+[hwmon]
+# Define an hwmon named "acpi" corresponding to the real hwmon device with name "acpitz"
+acpi = { dev_name = "acpitz" }
+
+# Define an hwmon named "cpu" corresponding to the real hwmon device with name "coretemp"
+cpu = { dev_name = "coretemp" }
+
+# Define an hwmon named "gpu" corresponding to the real hwmon device with name "nouevau"
+gpu = { dev_name = "nouveau" }
+
+# Define an hwmon named "mobo" corresponding to the real hwmon device with name "thinkpad"
+mobo = { dev_name = "thinkpad" }
+
+
+# List of sensor groups. Each group has a name, zero or more temp sensors, zero or more fan sensors, and zero or more battery sensors.
+#
+# Sensor groups allow you to group sensors from multiple hwmon devices into one logical group.
+#
+# The first group is for the CPU. It includes the CPU's own temp sensors and the motherboard's temp sensor for the CPU.
+[[sensor]]
+name = "CPU"
+temps = [
+	# Sensors are identified in two ways, either by their number or by their label. For example, temp sensor 1
+	# has its value in the file `temp1_input` and its label in the file `temp1_label`. Identifying a sensor by its label
+	# is handy in order to have a self-documenting string, but note that not all sensors have labels.
+	#
+	# sensord also considers sensors to have a name. One can be specified explicitly in the config,
+	# or else the label will be used as the name.
+	#
+	# These two temp sensors are looked up under the hwmon named "cpu" by their labels "Core 0" and "Core 1".
+	# For example, if that device had the path `/sys/class/hwmon/hwmon1`, and if `/sys/class/hwmon/hwmon1/temp2_label` has the contents "Core 0",
+	# then the first sensor's value would be read from `/sys/class/hwmon/hwmon1/temp2_input`
+	{ hwmon = "cpu", label = "Core 0" },
+	{ hwmon = "cpu", label = "Core 1" },
+
+	# This next sensor doesn't have a corresponding label file, so it's looked up by number,
+	# and its name is set explicitly to identify that it's coming from the motherboard.
+	{ hwmon = "mobo", num = 1, name = "mobo" },
+]
+
+# The second sensor group is for the GPU.
+[[sensor]]
+name = "GPU"
+temps = [
+	{ hwmon = "gpu", num = 1 },
+	{ hwmon = "mobo", num = 4, name = "mobo" },
+]
+
+# The third sensor group is for the motherboard.
+[[sensor]]
+name = "Mobo"
+temps = [
+	{ hwmon = "mobo", num = 2, name = "aps" },
+	{ hwmon = "mobo", num = 3, name = "crd" },
+	{ hwmon = "mobo", num = 5, name = "no5" },
+	{ hwmon = "mobo", num = 9, name = "bus" },
+	{ hwmon = "mobo", num = 10, name = "pci" },
+	{ hwmon = "mobo", num = 11, name = "pwr" },
+]
+fans = [
+	{ hwmon = "mobo", num = 1 },
+]
+
+# The fourth sensor group is for additional sensors from the motherboard.
+[[sensor]]
+name = "Mobo"
+temps = [
+	{ hwmon = "mobo", num = 6, name = "x7d" },
+	{ hwmon = "mobo", num = 7, name = "bat" },
+	{ hwmon = "mobo", num = 8, name = "x7f" },
+	{ hwmon = "mobo", num = 12, name = "xc3" },
+]
