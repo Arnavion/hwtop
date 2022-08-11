@@ -6,7 +6,7 @@ pub(crate) struct Config {
 	pub(crate) networks: Vec<Network>,
 }
 
-#[derive(Debug, Default, serde::Deserialize)]
+#[derive(Debug, Default, Eq, PartialEq, serde::Deserialize)]
 pub(crate) struct Cpus {
 	#[serde(default)]
 	pub(crate) use_sysfs: bool,
@@ -50,87 +50,6 @@ pub(crate) struct Network {
 
 impl<'de> serde::Deserialize<'de> for Config {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::Deserializer<'de> {
-		#[derive(Debug, serde::Deserialize)]
-		struct InnerConfig {
-			interval: Option<f32>,
-			#[serde(default)]
-			cpus: Cpus,
-			#[serde(default)]
-			hwmon: std::collections::BTreeMap<String, Hwmon>,
-			#[serde(default)]
-			power_supply: std::collections::BTreeMap<String, String>,
-			#[serde(default)]
-			sensors: Vec<InnerSensorGroup>,
-			#[serde(default)]
-			networks: Vec<String>,
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		enum Hwmon {
-			#[serde(rename = "dev_name")]
-			Name(String),
-			#[serde(rename = "dev_path")]
-			Path(std::path::PathBuf),
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		struct InnerSensorGroup {
-			name: String,
-			#[serde(default)]
-			temps: Vec<InnerTempSensor>,
-			#[serde(default)]
-			fans: Vec<InnerFanSensor>,
-			#[serde(default)]
-			bats: Vec<InnerBatSensor>,
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		struct InnerTempSensor {
-			#[serde(flatten)]
-			spec: InnerTempSensorSpec,
-			offset: Option<f64>,
-			name: Option<String>,
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		#[serde(untagged)]
-		enum InnerTempSensorSpec {
-			Hwmon { hwmon: String, #[serde(flatten)] num_or_label: HwmonNumOrLabel },
-			Thermal { thermal_zone: u8 },
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		struct InnerFanSensor {
-			hwmon: String,
-			#[serde(flatten)] num_or_label: HwmonNumOrLabel,
-			name: Option<String>,
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		enum InnerBatSensor {
-			#[serde(rename = "hwmon")]
-			Hwmon(String),
-			#[serde(rename = "power_supply")]
-			PowerSupply(String),
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		struct HwmonNum {
-			num: u8,
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		struct HwmonLabel {
-			label: String,
-		}
-
-		#[derive(Debug, serde::Deserialize)]
-		#[serde(untagged)]
-		enum HwmonNumOrLabel {
-			Num(HwmonNum),
-			Label(HwmonLabel),
-		}
-
 		let InnerConfig { interval, cpus, hwmon, power_supply, sensors, networks } = serde::Deserialize::deserialize(deserializer)?;
 
 		let interval = interval.unwrap_or(1.);
@@ -197,9 +116,9 @@ impl<'de> serde::Deserialize<'de> for Config {
 							let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| crate::Error::Other(format!("hwmon {sensor_hwmon:?} is not defined").into()))?;
 
 							let num = match num_or_label {
-								HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
+								HwmonNumOrLabel::Num(num) => Some(num),
 
-								HwmonNumOrLabel::Label(HwmonLabel { label: expected_label }) => {
+								HwmonNumOrLabel::Label(expected_label) => {
 									let mut num = None;
 
 									for entry in crate::std2::fs::read_dir(hwmon)? {
@@ -282,9 +201,9 @@ impl<'de> serde::Deserialize<'de> for Config {
 						let hwmon = hwmon.get(&sensor_hwmon).ok_or_else(|| crate::Error::Other(format!("hwmon {sensor_hwmon:?} is not defined").into()))?;
 
 						let num = match num_or_label {
-							HwmonNumOrLabel::Num(HwmonNum { num }) => Some(num),
+							HwmonNumOrLabel::Num(num) => Some(num),
 
-							HwmonNumOrLabel::Label(HwmonLabel { label: expected_label }) => {
+							HwmonNumOrLabel::Label(expected_label) => {
 								let mut num = None;
 
 								for entry in crate::std2::fs::read_dir(hwmon)? {
@@ -429,5 +348,603 @@ impl<'de> serde::Deserialize<'de> for Config {
 			sensors,
 			networks,
 		})
+	}
+}
+
+#[derive(Debug, PartialEq, serde::Deserialize)]
+struct InnerConfig {
+	interval: Option<f32>,
+	#[serde(default)]
+	cpus: Cpus,
+	#[serde(default)]
+	hwmon: std::collections::BTreeMap<String, Hwmon>,
+	#[serde(default)]
+	power_supply: std::collections::BTreeMap<String, String>,
+	#[serde(default)]
+	sensors: Vec<InnerSensorGroup>,
+	#[serde(default)]
+	networks: Vec<String>,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+enum Hwmon {
+	#[serde(rename = "dev_name")]
+	Name(String),
+	#[serde(rename = "dev_path")]
+	Path(std::path::PathBuf),
+}
+
+#[derive(Debug, PartialEq, serde::Deserialize)]
+struct InnerSensorGroup {
+	name: String,
+	#[serde(default)]
+	temps: Vec<InnerTempSensor>,
+	#[serde(default)]
+	fans: Vec<InnerFanSensor>,
+	#[serde(default)]
+	bats: Vec<InnerBatSensor>,
+}
+
+#[derive(Debug, PartialEq, serde::Deserialize)]
+struct InnerTempSensor {
+	#[serde(flatten)]
+	spec: InnerTempSensorSpec,
+	offset: Option<f64>,
+	name: Option<String>,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+#[serde(untagged)]
+enum InnerTempSensorSpec {
+	Hwmon { hwmon: String, #[serde(flatten)] num_or_label: HwmonNumOrLabel },
+	Thermal { thermal_zone: u8 },
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+struct InnerFanSensor {
+	hwmon: String,
+	#[serde(flatten)] num_or_label: HwmonNumOrLabel,
+	name: Option<String>,
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+enum InnerBatSensor {
+	#[serde(rename = "hwmon")]
+	Hwmon(String),
+	#[serde(rename = "power_supply")]
+	PowerSupply(String),
+}
+
+#[derive(Debug, Eq, PartialEq, serde::Deserialize)]
+enum HwmonNumOrLabel {
+	#[serde(rename = "num")]
+	Num(u8),
+	#[serde(rename = "label")]
+	Label(String),
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn microsoft_surfacert() {
+		test_inner("microsoft-surfacert.yaml", InnerConfig {
+			interval: None,
+			cpus: Cpus {
+				use_sysfs: false,
+			},
+			hwmon: [
+				("soc".to_owned(), Hwmon::Name("nct1008".to_owned())),
+			].into(),
+			power_supply: [
+				("bat".to_owned(), "surface-rt-battery".to_owned()),
+			].into(),
+			sensors: vec![
+				InnerSensorGroup {
+					name: "SoC".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "soc".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(1),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "soc".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(2),
+							},
+							offset: None,
+							name: None,
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "Bat".to_owned(),
+					temps: vec![],
+					fans: vec![],
+					bats: vec![
+						InnerBatSensor::PowerSupply("bat".to_owned()),
+					],
+				},
+			],
+			networks: vec![
+				"mlan0".to_owned(),
+			],
+		});
+	}
+
+	#[test]
+	fn pinephone() {
+		test_inner("pinephone.yaml", InnerConfig {
+			interval: None,
+			cpus: Cpus {
+				use_sysfs: true,
+			},
+			hwmon: [
+				("cpu".to_owned(), Hwmon::Name("cpu0_thermal".to_owned())),
+				("gpu0".to_owned(), Hwmon::Name("gpu0_thermal".to_owned())),
+				("gpu1".to_owned(), Hwmon::Name("gpu1_thermal".to_owned())),
+				("bat".to_owned(), Hwmon::Name("axp20x_battery".to_owned())),
+			].into(),
+			power_supply: Default::default(),
+			sensors: vec![
+				InnerSensorGroup {
+					name: "CPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(1),
+							},
+							offset: None,
+							name: None,
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "GPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "gpu0".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(1),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "gpu1".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(1),
+							},
+							offset: None,
+							name: None,
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "Bat".to_owned(),
+					temps: vec![],
+					fans: vec![],
+					bats: vec![
+						InnerBatSensor::Hwmon("bat".to_owned()),
+					],
+				},
+			],
+			networks: vec![
+				"eth0".to_owned(),
+				"wwan0".to_owned(),
+			],
+		});
+	}
+
+	#[test]
+	fn raspberry_pi() {
+		test_inner("raspberry-pi.yaml", InnerConfig {
+			interval: None,
+			cpus: Cpus {
+				use_sysfs: true,
+			},
+			hwmon: [
+				("cpu".to_owned(), Hwmon::Name("cpu_thermal".to_owned())),
+			].into(),
+			power_supply: Default::default(),
+			sensors: vec![
+				InnerSensorGroup {
+					name: "CPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(1),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Thermal {
+								thermal_zone: 0,
+							},
+							offset: None,
+							name: None,
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+			],
+			networks: vec![
+				"eth0".to_owned(),
+			],
+		});
+	}
+
+	#[test]
+	fn t61() {
+		test_inner("t61.yaml", InnerConfig {
+			interval: None,
+			cpus: Cpus {
+				use_sysfs: false,
+			},
+			hwmon: [
+				("acpi".to_owned(), Hwmon::Name("acpitz".to_owned())),
+				("cpu".to_owned(), Hwmon::Name("coretemp".to_owned())),
+				("gpu".to_owned(), Hwmon::Name("nouveau".to_owned())),
+				("mobo".to_owned(), Hwmon::Name("thinkpad".to_owned())),
+			].into(),
+			power_supply: Default::default(),
+			sensors: vec![
+				InnerSensorGroup {
+					name: "CPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("Core 0".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("Core 1".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(1),
+							},
+							offset: None,
+							name: Some("mobo".to_owned()),
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "GPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "gpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(1),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(4),
+							},
+							offset: None,
+							name: Some("mobo".to_owned()),
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "Mobo".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(2),
+							},
+							offset: None,
+							name: Some("aps".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(3),
+							},
+							offset: None,
+							name: Some("crd".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(5),
+							},
+							offset: None,
+							name: Some("no5".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(9),
+							},
+							offset: None,
+							name: Some("bus".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(10),
+							},
+							offset: None,
+							name: Some("pci".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(11),
+							},
+							offset: None,
+							name: Some("pwr".to_owned()),
+						},
+					],
+					fans: vec![
+						InnerFanSensor {
+							hwmon: "mobo".to_owned(),
+							num_or_label: HwmonNumOrLabel::Num(1),
+							name: None,
+						},
+					],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "Mobo".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(6),
+							},
+							offset: None,
+							name: Some("x7d".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(7),
+							},
+							offset: None,
+							name: Some("bat".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(8),
+							},
+							offset: None,
+							name: Some("x7f".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Num(12),
+							},
+							offset: None,
+							name: Some("xc3".to_owned()),
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+			],
+			networks: vec![
+				"enp0s25".to_owned(),
+			],
+		});
+	}
+
+	#[test]
+	fn threadripper2() {
+		test_inner("threadripper2.yaml", InnerConfig {
+			interval: None,
+			cpus: Cpus {
+				use_sysfs: false,
+			},
+			hwmon: [
+				("cpu1".to_owned(), Hwmon::Name("k10temp".to_owned())),
+				("cpu2".to_owned(), Hwmon::Name("k10temp".to_owned())),
+				("gpu".to_owned(), Hwmon::Name("amdgpu".to_owned())),
+				("mobo".to_owned(), Hwmon::Name("nct6779".to_owned())),
+			].into(),
+			power_supply: Default::default(),
+			sensors: vec![
+				InnerSensorGroup {
+					name: "CPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu1".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("Tdie".to_owned()),
+							},
+							offset: None,
+							name: Some("CPU 1".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu2".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("Tdie".to_owned()),
+							},
+							offset: None,
+							name: Some("CPU 2".to_owned()),
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("SMBUSMASTER 0".to_owned()),
+							},
+							offset: Some(-27.0),
+							name: None,
+						},
+					],
+					fans: vec![
+						InnerFanSensor {
+							hwmon: "mobo".to_owned(),
+							num_or_label: HwmonNumOrLabel::Num(2),
+							name: Some("Fan 1".to_owned()),
+						},
+					],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "CPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu1".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("Tccd1".to_owned()),
+							},
+							offset: Some(-27.0),
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "cpu2".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("Tccd1".to_owned()),
+							},
+							offset: Some(-27.0),
+							name: None,
+						},
+					],
+					fans: vec![],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "GPU".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "gpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("edge".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "gpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("junction".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "gpu".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("mem".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+					],
+					fans: vec![
+						InnerFanSensor {
+							hwmon: "gpu".to_owned(),
+							num_or_label: HwmonNumOrLabel::Num(1),
+							name: None,
+						},
+					],
+					bats: vec![],
+				},
+				InnerSensorGroup {
+					name: "Mobo".to_owned(),
+					temps: vec![
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("SYSTIN".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("AUXTIN1".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("AUXTIN2".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+						InnerTempSensor {
+							spec: InnerTempSensorSpec::Hwmon {
+								hwmon: "mobo".to_owned(),
+								num_or_label: HwmonNumOrLabel::Label("AUXTIN3".to_owned()),
+							},
+							offset: None,
+							name: None,
+						},
+					],
+					fans: vec![
+						InnerFanSensor {
+							hwmon: "mobo".to_owned(),
+							num_or_label: HwmonNumOrLabel::Num(1),
+							name: Some("Front".to_owned()),
+						},
+						InnerFanSensor {
+							hwmon: "mobo".to_owned(),
+							num_or_label: HwmonNumOrLabel::Num(4),
+							name: Some("Side".to_owned()),
+						},
+						InnerFanSensor {
+							hwmon: "mobo".to_owned(),
+							num_or_label: HwmonNumOrLabel::Num(5),
+							name: Some("Rear".to_owned()),
+						},
+					],
+					bats: vec![],
+				},
+			],
+			networks: vec![
+				"enp4s0".to_owned(),
+			],
+		});
+	}
+
+	fn test_inner(filename: &str, expected: InnerConfig) {
+		let mut path: std::path::PathBuf = std::env::var_os("CARGO_MANIFEST_DIR").unwrap().into();
+		path.push("config-examples");
+		path.push(filename);
+		let f = std::fs::File::open(path).unwrap();
+		let actual = serde_yaml::from_reader(f).unwrap();
+		assert_eq!(expected, actual);
 	}
 }
