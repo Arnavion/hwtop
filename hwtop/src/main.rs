@@ -73,9 +73,8 @@ fn main() -> Result<(), Error> {
 		std::process::exit(1);
 	});
 
-	let mut stdout = std::io::stdout().lock();
-
-	let _terminal = terminal::Terminal::new(&mut stdout)?;
+	let stdout = std::io::stdout().lock();
+	let mut stdout = terminal::make(stdout)?;
 
 	let mut output = vec![];
 
