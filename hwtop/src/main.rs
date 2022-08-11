@@ -36,39 +36,43 @@ fn main() -> Result<(), Error> {
 		let event_sender = event_sender.clone();
 
 		move || {
-			let err = loop {
-				let (header, body) = match dbus_client.recv() {
-					Ok(message) => message,
-					Err(err) => break err,
-				};
+			loop {
+				match dbus_client.recv() {
+					Ok((header, body)) => match header.r#type {
+						dbus_pure::proto::MessageType::Signal { interface, member, path: _ } if interface == "dev.arnavion.sensord.Daemon" && member == "Sensors" => {
+							if event_sender.send(Ok(Event::Sensors(body))).is_err() {
+								break;
+							}
+						},
+						_ => (),
+					},
 
-				match header.r#type {
-					dbus_pure::proto::MessageType::Signal { interface, member, path: _ }
-						if interface == "dev.arnavion.sensord.Daemon" && member == "Sensors" => (),
-					_ => continue,
+					Err(err) => {
+						let _ = event_sender.send(Err(Error::from(err)));
+						break;
+					},
 				}
-
-				let _ = event_sender.send(Event::Sensors(body));
-			};
-
-			eprintln!("{}", Error::from(err));
-			std::process::exit(1);
+			}
 		}
 	});
 
 	std::thread::spawn(move || {
 		let mut stdin = std::io::stdin().lock();
 
-		let err = loop {
+		loop {
 			let mut b = 0_u8;
-			if let Err(err) = std::io::Read::read_exact(&mut stdin, std::slice::from_mut(&mut b)) {
-				break err;
+			// TODO: Buggy lint is being removed from `clippy::all`. Ref: https://github.com/rust-lang/rust-clippy/issues/8987#issuecomment-1207978548
+			#[allow(clippy::significant_drop_in_scrutinee)]
+			match std::io::Read::read_exact(&mut stdin, std::slice::from_mut(&mut b)) {
+				Ok(()) => if event_sender.send(Ok(Event::Stdin(b))).is_err() {
+					break;
+				},
+				Err(err) => {
+					let _ = event_sender.send(Err(Error::from(err)));
+					break;
+				},
 			}
-			let _ = event_sender.send(Event::Stdin(b));
-		};
-
-		eprintln!("{}", Error::from(err));
-		std::process::exit(1);
+		}
 	});
 
 	let stdout = std::io::stdout().lock();
@@ -77,7 +81,7 @@ fn main() -> Result<(), Error> {
 	let mut output = vec![];
 
 	let mut message = loop {
-		match event_receiver.recv()? {
+		match event_receiver.recv()?? {
 			Event::Sensors(new_message) => {
 				let new_message = new_message.ok_or("signal has no body")?;
 				let new_message: sensord_common::SensorsMessage<'static> = serde::Deserialize::deserialize(new_message)?;
@@ -91,7 +95,7 @@ fn main() -> Result<(), Error> {
 	let mut show_sensor_names = false;
 
 	loop {
-		show_sensor_names = match event_receiver.recv()? {
+		show_sensor_names = match event_receiver.recv()?? {
 			Event::Sensors(new_message) => {
 				let new_message = new_message.ok_or("signal has no body")?;
 				let new_message: sensord_common::SensorsMessage<'static> = serde::Deserialize::deserialize(new_message)?;
@@ -378,7 +382,7 @@ fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_ne
 }
 
 struct Error {
-	inner: Box<dyn std::error::Error>,
+	inner: Box<dyn std::error::Error + Send + Sync>,
 }
 
 impl std::fmt::Debug for Error {
@@ -401,7 +405,7 @@ impl std::fmt::Display for Error {
 	}
 }
 
-impl<E> From<E> for Error where E: Into<Box<dyn std::error::Error>> {
+impl<E> From<E> for Error where E: Into<Box<dyn std::error::Error + Send + Sync>> {
 	fn from(err: E) -> Self {
 		Error {
 			inner: err.into(),
