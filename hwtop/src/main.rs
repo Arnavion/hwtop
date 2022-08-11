@@ -59,13 +59,11 @@ fn main() -> Result<(), Error> {
 	std::thread::spawn(move || {
 		let mut stdin = std::io::stdin().lock();
 
-		let mut buf = [0_u8; 1];
-
 		let err = loop {
-			let b = match std::io::Read::read_exact(&mut stdin, &mut buf) {
-				Ok(_) => buf[0],
-				Err(err) => break err,
-			};
+			let mut b = 0_u8;
+			if let Err(err) = std::io::Read::read_exact(&mut stdin, std::slice::from_mut(&mut b)) {
+				break err;
+			}
 			let _ = event_sender.send(Event::Stdin(b));
 		};
 

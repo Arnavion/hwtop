@@ -142,7 +142,7 @@ pub(crate) fn parse_bat_capacity_sensor(path: &std::path::Path, buf: &mut Vec<u8
 
 pub(crate) fn parse_bat_status_sensor(path: &std::path::Path, buf: &mut Vec<u8>) -> Result<Option<bool>, crate::Error> {
 	Ok(match parse_hwmon_raw(path, buf)? {
-		Some("Charging") | Some("Full") => Some(true),
+		Some("Charging" | "Full") => Some(true),
 		_ => None,
 	})
 }
