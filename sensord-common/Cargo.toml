@@ -7,4 +7,6 @@ edition = "2021"
 [dependencies]
 dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
 dbus-pure-proto = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", default-features = false, features = [
+	"derive",
+] }

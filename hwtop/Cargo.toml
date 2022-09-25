@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 dbus-pure = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
 dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "master" }
-libc = "0.2"
+libc = { version = "0.2", default-features = false }
 sensord-common = { path = "../sensord-common" }
-serde = "1"
-terminal_size = "0.2"
+serde = { version = "1", default-features = false }
+terminal_size = { version = "0.2", default-features = false }

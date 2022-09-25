@@ -45,8 +45,8 @@ fn main() -> Result<(), Error> {
 
 	dbus_client.set_name("dev.arnavion.sensord.Daemon".to_owned());
 
-	let sys_devices_system_cpu_present_line_regex = regex::bytes::Regex::new(r"^0-(?P<high>\d+)$").expect("hard-coded regex is expected to be valid");
-	let proc_cpu_info_line_regex = regex::bytes::Regex::new(r"^(?:(?:processor\s*:\s*(?P<id>\d+))|(?:cpu MHz\s*:\s*(?P<frequency>\d+(?:\.\d+)?)))$").expect("hard-coded regex is expected to be valid");
+	let sys_devices_system_cpu_present_line_regex = regex::bytes::Regex::new(r"^0-(?P<high>[0-9]+)$").expect("hard-coded regex is expected to be valid");
+	let proc_cpu_info_line_regex = regex::bytes::Regex::new(r"^(?:(?:processor\t*: (?P<id>[0-9]+))|(?:cpu MHz\t*: (?P<frequency>[0-9]+(?:\.[0-9]+)?)))$").expect("hard-coded regex is expected to be valid");
 
 	let mut buf = vec![0_u8; 512];
 
