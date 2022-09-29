@@ -121,7 +121,7 @@ fn main() -> Result<(), Error> {
 
 		output.write_all(b"\x1B[2J\x1B[3J\x1B[1;1H")?;
 
-		let terminal_width: usize = terminal_size::terminal_size().map(|(width, _)| width.0).ok_or("not a TTY")?.into();
+		let terminal_width: usize = terminal::Terminal::width(&stdout)?;
 		let num_cpu_cols = terminal_width.saturating_sub(21) / 23 + 1;
 
 		let num_rows = (num_cpus + num_cpu_cols - 1) / num_cpu_cols;
