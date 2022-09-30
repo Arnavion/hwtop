@@ -6,8 +6,6 @@
 	clippy::too_many_lines,
 )]
 
-mod terminal;
-
 use std::io::Write;
 
 fn main() -> Result<(), Error> {
@@ -76,7 +74,9 @@ fn main() -> Result<(), Error> {
 	});
 
 	let stdout = std::io::stdout().lock();
-	let mut stdout = terminal::make(stdout)?;
+	let stdout = terminal::RawMode::new(stdout)?;
+	let stdout = terminal::AlternateScreen::new(stdout)?;
+	let mut stdout = terminal::NoWraparound::new(stdout)?;
 
 	let mut output = vec![];
 

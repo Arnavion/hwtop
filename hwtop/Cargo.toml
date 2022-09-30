@@ -10,3 +10,4 @@ dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "ma
 libc = { version = "0.2", default-features = false }
 sensord-common = { path = "../sensord-common" }
 serde = { version = "1", default-features = false }
+terminal = { git = "https://github.com/Arnavion/terminal", branch = "main" }
