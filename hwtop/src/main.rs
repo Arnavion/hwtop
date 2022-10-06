@@ -75,8 +75,9 @@ fn main() -> Result<(), Error> {
 
 	let stdout = std::io::stdout().lock();
 	let stdout = terminal::RawMode::new(stdout)?;
-	let stdout = terminal::AlternateScreen::new(stdout)?;
-	let mut stdout = terminal::NoWraparound::new(stdout)?;
+	let mut terminfo = terminal::terminfo::Terminfo::from_env()?;
+	let stdout = terminal::VtMode::new(stdout, terminfo.alternate_screen())?;
+	let mut stdout = terminal::VtMode::new(stdout, terminfo.no_wraparound())?;
 
 	let mut output = vec![];
 
@@ -119,7 +120,8 @@ fn main() -> Result<(), Error> {
 		output.clear();
 
 
-		output.write_all(b"\x1B[2J\x1B[3J\x1B[1;1H")?;
+		output.write_all(terminfo.clear_screen().to_bytes())?;
+		output.write_all(terminfo.clear_scrollback().to_bytes())?;
 
 		let terminal_width: usize = terminal::Terminal::width(&stdout)?;
 		let num_cpu_cols = terminal_width.saturating_sub(21) / 23 + 1;
