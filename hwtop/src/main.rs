@@ -120,8 +120,10 @@ fn main() -> Result<(), Error> {
 		output.clear();
 
 
-		output.write_all(terminfo.clear_screen().to_bytes())?;
-		output.write_all(terminfo.clear_scrollback().to_bytes())?;
+		let (begin_sync, _) = terminfo.sync()?;
+		output.write_all(begin_sync)?;
+		output.write_all(terminfo.clear_screen())?;
+		output.write_all(terminfo.clear_scrollback())?;
 
 		let terminal_width: usize = terminal::Terminal::width(&stdout)?;
 		let num_cpu_cols = terminal_width.saturating_sub(21) / 23 + 1;
@@ -194,6 +196,8 @@ fn main() -> Result<(), Error> {
 		}
 
 		output.write_all(b"    [s]ensor names  [q]uit")?;
+		let (_, end_sync) = terminfo.sync()?;
+		output.write_all(end_sync)?;
 
 		stdout.write_all(&output)?;
 		stdout.flush()?;
