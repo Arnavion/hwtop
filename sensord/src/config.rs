@@ -124,10 +124,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 									for entry in crate::std2::fs::read_dir(hwmon)? {
 										let entry = entry?.path();
 
-										let entry_file_name = match entry.file_name().and_then(std::ffi::OsStr::to_str) {
-											Some(entry_file_name) => entry_file_name,
-											None => continue,
-										};
+										let Some(entry_file_name) = entry.file_name().and_then(std::ffi::OsStr::to_str) else { continue; };
 										if !entry_file_name.starts_with("temp") || !entry_file_name.ends_with("_label") {
 											continue;
 										}
@@ -209,10 +206,7 @@ impl<'de> serde::Deserialize<'de> for Config {
 								for entry in crate::std2::fs::read_dir(hwmon)? {
 									let entry = entry?.path();
 
-									let entry_file_name = match entry.file_name().and_then(std::ffi::OsStr::to_str) {
-										Some(entry_file_name) => entry_file_name,
-										None => continue,
-									};
+									let Some(entry_file_name) = entry.file_name().and_then(std::ffi::OsStr::to_str) else { continue; };
 									if !entry_file_name.starts_with("fan") || !entry_file_name.ends_with("_label") {
 										continue;
 									}
