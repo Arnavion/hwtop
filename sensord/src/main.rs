@@ -209,7 +209,7 @@ fn main() -> Result<(), Error> {
 			networks: std::borrow::Cow::Borrowed(&message_networks),
 		};
 
-		let body = dbus_pure::proto::AsVariant::as_variant(&body);
+		let body = dbus_pure::proto::ToVariant::to_variant(&body);
 
 		let _ = dbus_client.send(
 			&mut dbus_pure::proto::MessageHeader {
