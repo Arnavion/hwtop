@@ -48,7 +48,7 @@ MemoryDenyWriteExecute=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes
 RemoveIPC=yes
-SystemCallFilter=@basic-io @file-system @io-event mprotect @network-io @process @signal @timer
+SystemCallFilter=@basic-io @file-system @io-event mprotect @network-io @process @signal @system-service @timer
 SystemCallArchitectures=native
 
 
