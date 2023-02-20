@@ -190,11 +190,12 @@ fn main() -> Result<(), Error> {
 
 			for network in &*message.networks {
 				output.write_all(b"\r\n")?;
-				print_network(&mut output, network, max_network_name_width)?;
+				print_network(&mut output, network, max_network_name_width, show_sensor_names)?;
 			}
 		}
 
-		output.write_all(b"    [s]ensor names  [q]uit")?;
+		output.write_all(b"  [s]ensor names  [q]uit")?;
+
 		let (_, end_sync) = terminfo.sync()?;
 		output.write_all(end_sync)?;
 
@@ -343,44 +344,51 @@ fn print_bat_sensor<W>(mut writer: W, sensor: &sensord_common::BatSensor<'_>, sh
 	Ok(())
 }
 
-fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_network_name_width: usize) -> Result<(), Error> where W: Write {
+fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_network_name_width: usize, show_sensor_names: bool) -> Result<(), Error> where W: Write {
 	write!(writer, "{:>max_network_name_width$}", network.name)?;
 	writer.write_all(b": ")?;
 
-	let rx_speed = network.rx * 8.;
-	if rx_speed < 999.5 {
-		write!(writer, "{rx_speed:3.0}")?;
-		writer.write_all(b"    b/s down   ")?;
-	}
-	else if rx_speed < 999_950. {
-		write!(writer, "{:5.1}", rx_speed / 1_000.)?;
-		writer.write_all(b" Kb/s down   ")?;
-	}
-	else if rx_speed < 999_950_000. {
-		write!(writer, "{:5.1}", rx_speed / 1_000_000.)?;
-		writer.write_all(b" Mb/s down   ")?;
+	if show_sensor_names {
+		for address in &network.addresses {
+			write!(writer, "{address} ")?;
+		}
 	}
 	else {
-		write!(writer, "{:5.1}", rx_speed / 1_000_000_000.)?;
-		writer.write_all(b" Gb/s down   ")?;
-	}
+		let rx_speed = network.rx * 8.;
+		if rx_speed < 999.5 {
+			write!(writer, "{rx_speed:3.0}")?;
+			writer.write_all(b"    b/s down   ")?;
+		}
+		else if rx_speed < 999_950. {
+			write!(writer, "{:5.1}", rx_speed / 1_000.)?;
+			writer.write_all(b" Kb/s down   ")?;
+		}
+		else if rx_speed < 999_950_000. {
+			write!(writer, "{:5.1}", rx_speed / 1_000_000.)?;
+			writer.write_all(b" Mb/s down   ")?;
+		}
+		else {
+			write!(writer, "{:5.1}", rx_speed / 1_000_000_000.)?;
+			writer.write_all(b" Gb/s down   ")?;
+		}
 
-	let tx_speed = network.tx * 8.;
-	if tx_speed < 999.5 {
-		write!(writer, "{tx_speed:3.0}")?;
-		writer.write_all(b"    b/s up")?;
-	}
-	else if tx_speed < 999_950. {
-		write!(writer, "{:5.1}", tx_speed / 1_000.)?;
-		writer.write_all(b" Kb/s up")?;
-	}
-	else if tx_speed < 999_950_000. {
-		write!(writer, "{:5.1}", tx_speed / 1_000_000.)?;
-		writer.write_all(b" Mb/s up")?;
-	}
-	else {
-		write!(writer, "{:5.1}", tx_speed / 1_000_000_000.)?;
-		writer.write_all(b" Gb/s up")?;
+		let tx_speed = network.tx * 8.;
+		if tx_speed < 999.5 {
+			write!(writer, "{tx_speed:3.0}")?;
+			writer.write_all(b"    b/s up")?;
+		}
+		else if tx_speed < 999_950. {
+			write!(writer, "{:5.1}", tx_speed / 1_000.)?;
+			writer.write_all(b" Kb/s up")?;
+		}
+		else if tx_speed < 999_950_000. {
+			write!(writer, "{:5.1}", tx_speed / 1_000_000.)?;
+			writer.write_all(b" Mb/s up")?;
+		}
+		else {
+			write!(writer, "{:5.1}", tx_speed / 1_000_000_000.)?;
+			writer.write_all(b" Gb/s up")?;
+		}
 	}
 
 	Ok(())

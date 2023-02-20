@@ -102,18 +102,67 @@ pub(crate) fn parse_scaling_cur_freq(id: usize, cpu_freq: &mut f64, buf: &mut Ve
 	Ok(())
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) struct Network {
 	pub(crate) now: std::time::Instant,
 	pub(crate) rx: u64,
 	pub(crate) tx: u64,
+	pub(crate) addresses: Vec<std::net::IpAddr>,
 }
 
 impl Network {
-	pub(crate) fn update(&mut self, rx_path: &std::path::Path, tx_path: &std::path::Path, buf: &mut Vec<u8>) -> Result<(), crate::Error> {
-		self.now = std::time::Instant::now();
-		self.rx = parse_hwmon(rx_path, buf)?.unwrap_or(0);
-		self.tx = parse_hwmon(tx_path, buf)?.unwrap_or(0);
+	pub(crate) fn update_all<'a>(
+		specs_and_networks: impl IntoIterator<Item = (&'a crate::config::Network, &'a mut Self)>,
+		buf: &mut Vec<u8>,
+	) -> Result<(), crate::Error> {
+		let mut addresses: std::collections::BTreeMap<_, Vec<_>> = Default::default();
+
+		unsafe {
+			let mut addrs = std::ptr::null_mut();
+			if libc::getifaddrs(&mut addrs) != 0 {
+				return Err(crate::Error::Other(std::io::Error::last_os_error().into()));
+			}
+
+			let mut next = addrs;
+			while let Some(ifaddr) = std::ptr::NonNull::new(next) {
+				let ifaddr = ifaddr.as_ref();
+				next = ifaddr.ifa_next;
+
+				let Some(name) = std::ptr::NonNull::new(ifaddr.ifa_name) else { continue; };
+				let name = std::ffi::CStr::from_ptr(name.as_ptr());
+				let Ok(name) = name.to_str() else { continue; };
+
+				let Some(mut addr) = std::ptr::NonNull::new(ifaddr.ifa_addr) else { continue; };
+				let addr = addr.as_mut();
+
+				let ip: std::net::IpAddr = match addr.sa_family.into() {
+					libc::AF_INET => {
+						#[allow(clippy::cast_ptr_alignment)]
+						let Some(addr) = std::ptr::NonNull::new(<*mut _>::cast::<libc::sockaddr_in>(addr)) else { continue; };
+						addr.as_ref().sin_addr.s_addr.to_ne_bytes().into()
+					},
+					libc::AF_INET6 => {
+						#[allow(clippy::cast_ptr_alignment)]
+						let Some(addr) = std::ptr::NonNull::new(<*mut _>::cast::<libc::sockaddr_in6>(addr)) else { continue; };
+						addr.as_ref().sin6_addr.s6_addr.into()
+					},
+					_ => continue,
+				};
+
+				addresses.entry(name).or_default().push(ip);
+			}
+
+			for (network_spec, network) in specs_and_networks {
+				network.now = std::time::Instant::now();
+				network.rx = parse_hwmon(&network_spec.rx_path, buf)?.unwrap_or(0);
+				network.tx = parse_hwmon(&network_spec.tx_path, buf)?.unwrap_or(0);
+
+				network.addresses = addresses.get(&*network_spec.name).cloned().unwrap_or_default();
+			}
+
+			libc::freeifaddrs(addrs);
+		}
+
 		Ok(())
 	}
 }

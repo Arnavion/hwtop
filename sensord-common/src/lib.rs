@@ -49,4 +49,5 @@ pub struct Network<'a> {
 	pub name: std::borrow::Cow<'a, str>,
 	pub rx: f64,
 	pub tx: f64,
+	pub addresses: Vec<std::borrow::Cow<'a, str>>,
 }

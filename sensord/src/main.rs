@@ -98,7 +98,16 @@ fn main() -> Result<(), Error> {
 		.collect::<Vec<_>>()
 		.into_boxed_slice();
 
-	let mut previous_networks = vec![hwmon::Network { now: std::time::Instant::now(), rx: 0, tx: 0 }; config.networks.len()].into_boxed_slice();
+	let mut previous_networks =
+		vec![
+			hwmon::Network {
+				now: std::time::Instant::now(),
+				rx: 0,
+				tx: 0,
+				addresses: vec![],
+			};
+			config.networks.len()
+		].into_boxed_slice();
 	let mut networks = previous_networks.clone();
 	let mut message_networks: Box<[sensord_common::Network<'_>]> =
 		config.networks.iter()
@@ -106,6 +115,7 @@ fn main() -> Result<(), Error> {
 			name: (&network.name).into(),
 			rx: 0.,
 			tx: 0.,
+			addresses: vec![],
 		})
 		.collect::<Vec<_>>()
 		.into_boxed_slice();
@@ -130,9 +140,7 @@ fn main() -> Result<(), Error> {
 			&mut buf,
 		)?;
 
-		for (network_spec, network) in config.networks.iter().zip(networks.iter_mut()) {
-			network.update(&network_spec.rx_path, &network_spec.tx_path, &mut buf)?;
-		}
+		hwmon::Network::update_all(config.networks.iter().zip(networks.iter_mut()), &mut buf)?;
 
 		for ((previous_cpu, &(cpu, frequency)), message_cpu) in previous_cpus.iter_mut().zip(&*cpus).zip(&mut *message_cpus) {
 			let diff_total = cpu.total - previous_cpu.total;
@@ -179,7 +187,7 @@ fn main() -> Result<(), Error> {
 			}
 		}
 
-		for ((&network, previous_network), message_network) in networks.iter().zip(&mut *previous_networks).zip(&mut *message_networks) {
+		for ((network, previous_network), message_network) in networks.iter_mut().zip(&mut *previous_networks).zip(&mut *message_networks) {
 			let (rx, tx) =
 				if previous_network.rx == 0 && previous_network.tx == 0 {
 					(0., 0.)
@@ -195,10 +203,11 @@ fn main() -> Result<(), Error> {
 					(0., 0.)
 				};
 
-			*previous_network = network;
-
 			message_network.rx = rx;
 			message_network.tx = tx;
+			message_network.addresses = network.addresses.iter().map(|address| address.to_string().into()).collect();
+
+			std::mem::swap(previous_network, network);
 		}
 
 		let body = sensord_common::SensorsMessage {
