@@ -937,8 +937,8 @@ mod tests {
 		let mut path: std::path::PathBuf = std::env::var_os("CARGO_MANIFEST_DIR").unwrap().into();
 		path.push("config-examples");
 		path.push(filename);
-		let actual = std::fs::read(path).unwrap();
-		let actual = toml::from_slice(&actual).unwrap();
+		let actual = std::fs::read_to_string(path).unwrap();
+		let actual = toml::from_str(&actual).unwrap();
 		assert_eq!(*expected, actual);
 	}
 }

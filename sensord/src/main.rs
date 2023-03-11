@@ -14,8 +14,8 @@ mod std2;
 
 fn main() -> Result<(), Error> {
 	let config: config::Config = Error::with_path_context("/etc/sensord/config.toml".as_ref(), |path| {
-		let config = std::fs::read(path)?;
-		let config = toml::from_slice(&config)?;
+		let config = std::fs::read_to_string(path)?;
+		let config = toml::from_str(&config)?;
 		Ok(config)
 	})?;
 
