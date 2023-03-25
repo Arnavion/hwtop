@@ -1,4 +1,4 @@
-.PHONY: clean default install test
+.PHONY: clean default install outdated print test
 
 default: target/release/hwtop target/release/sensord
 
@@ -24,6 +24,12 @@ install: target/release/hwtop target/release/sensord
 	mkdir -p /etc/dbus-1/system.d/
 	cp -f sensord/data/sensord.dbus /etc/dbus-1/system.d/sensord.conf
 
+outdated:
+	cargo-outdated
+
+print:
+	git status --porcelain
+
 test:
-	cargo test --all
-	cargo clippy --all --tests --examples
+	cargo test --workspace
+	cargo clippy --workspace --tests --examples
