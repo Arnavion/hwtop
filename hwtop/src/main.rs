@@ -58,8 +58,6 @@ fn main() -> Result<(), Error> {
 
 		loop {
 			let mut b = 0_u8;
-			// TODO: Buggy lint is being removed from `clippy::all`. Ref: https://github.com/rust-lang/rust-clippy/issues/8987#issuecomment-1207978548
-			#[allow(clippy::significant_drop_in_scrutinee)]
 			match std::io::Read::read_exact(&mut stdin, std::slice::from_mut(&mut b)) {
 				Ok(()) => if event_sender.send(Ok(Event::Stdin(b))).is_err() {
 					break;
