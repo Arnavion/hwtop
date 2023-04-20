@@ -76,6 +76,7 @@ fn main() -> Result<(), Error> {
 	let stdout = terminal::RawMode::new(stdout)?;
 	let mut terminfo = terminal::terminfo::Terminfo::from_env()?;
 	let stdout = terminal::VtMode::new(stdout, terminfo.alternate_screen())?;
+	let stdout = terminal::VtMode::new(stdout, terminfo.hide_cursor())?;
 	let mut stdout = terminal::VtMode::new(stdout, terminfo.no_wraparound())?;
 
 	let mut output = vec![];
