@@ -354,39 +354,47 @@ fn print_network<W>(mut writer: W, network: &sensord_common::Network<'_>, max_ne
 	}
 	else {
 		let rx_speed = network.rx * 8.;
-		if rx_speed < 999.5 {
-			write!(writer, "{rx_speed:3.0}")?;
-			writer.write_all(b"    b/s down   ")?;
+		if rx_speed == 0. {
+			write!(writer, "\x1B[0;34m{rx_speed:3.0}")?;
+			writer.write_all(b"    b/s down\x1B[0m   ")?;
+		}
+		else if rx_speed < 999.5 {
+			write!(writer, "\x1B[1;34m{rx_speed:3.0}")?;
+			writer.write_all(b"    b/s down\x1B[0m   ")?;
 		}
 		else if rx_speed < 999_950. {
-			write!(writer, "{:5.1}", rx_speed / 1_000.)?;
-			writer.write_all(b" Kb/s down   ")?;
+			write!(writer, "\x1B[1;32m{:5.1}", rx_speed / 1_000.)?;
+			writer.write_all(b" Kb/s down\x1B[0m   ")?;
 		}
 		else if rx_speed < 999_950_000. {
-			write!(writer, "{:5.1}", rx_speed / 1_000_000.)?;
-			writer.write_all(b" Mb/s down   ")?;
+			write!(writer, "\x1B[1;33m{:5.1}", rx_speed / 1_000_000.)?;
+			writer.write_all(b" Mb/s down\x1B[0m   ")?;
 		}
 		else {
-			write!(writer, "{:5.1}", rx_speed / 1_000_000_000.)?;
-			writer.write_all(b" Gb/s down   ")?;
+			write!(writer, "\x1B[1;31m{:5.1}", rx_speed / 1_000_000_000.)?;
+			writer.write_all(b" Gb/s down\x1B[0m   ")?;
 		}
 
 		let tx_speed = network.tx * 8.;
-		if tx_speed < 999.5 {
-			write!(writer, "{tx_speed:3.0}")?;
-			writer.write_all(b"    b/s up")?;
+		if tx_speed == 0. {
+			write!(writer, "\x1B[0;34m{tx_speed:3.0}")?;
+			writer.write_all(b"    b/s up\x1B[0m")?;
+		}
+		else if tx_speed < 999.5 {
+			write!(writer, "\x1B[1;34m{tx_speed:3.0}")?;
+			writer.write_all(b"    b/s up\x1B[0m")?;
 		}
 		else if tx_speed < 999_950. {
-			write!(writer, "{:5.1}", tx_speed / 1_000.)?;
-			writer.write_all(b" Kb/s up")?;
+			write!(writer, "\x1B[1;32m{:5.1}", tx_speed / 1_000.)?;
+			writer.write_all(b" Kb/s up\x1B[0m")?;
 		}
 		else if tx_speed < 999_950_000. {
-			write!(writer, "{:5.1}", tx_speed / 1_000_000.)?;
-			writer.write_all(b" Mb/s up")?;
+			write!(writer, "\x1B[1;33m{:5.1}", tx_speed / 1_000_000.)?;
+			writer.write_all(b" Mb/s up\x1B[0m")?;
 		}
 		else {
-			write!(writer, "{:5.1}", tx_speed / 1_000_000_000.)?;
-			writer.write_all(b" Gb/s up")?;
+			write!(writer, "\x1B[1;31m{:5.1}", tx_speed / 1_000_000_000.)?;
+			writer.write_all(b" Gb/s up\x1B[0m")?;
 		}
 	}
 
