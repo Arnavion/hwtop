@@ -10,9 +10,8 @@ pub(crate) fn num_cpus(sys_devices_system_cpu_present_line_regex: &regex::bytes:
 	let mut result: Option<usize> = None;
 
 	for_each_line(path, buf, |line| {
-		let captures = sys_devices_system_cpu_present_line_regex.captures(line).ok_or("could not parse /sys/devices/system/cpu/present")?;
-		let high = captures.name("high").unwrap();
-		let high = std::str::from_utf8(high.as_bytes())?;
+		let (_, [high]) = sys_devices_system_cpu_present_line_regex.captures(line).ok_or("could not parse /sys/devices/system/cpu/present")?.extract();
+		let high = std::str::from_utf8(high)?;
 		let high: usize = high.parse()?;
 		result = Some(high + 1);
 		Ok(true)
