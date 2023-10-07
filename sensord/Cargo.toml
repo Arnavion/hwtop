@@ -15,6 +15,6 @@ sensord-common = { path = "../sensord-common" }
 serde = { version = "1.0.103", default-features = false, features = [
 	"derive",
 ] }
-toml = { version = "0.7", default-features = false, features = [
+toml = { version = "0.8", default-features = false, features = [
 	"parse", # for toml::from_str
 ] }
