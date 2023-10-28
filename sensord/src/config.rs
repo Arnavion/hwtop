@@ -77,20 +77,25 @@ impl<'de> serde::Deserialize<'de> for Config {
 					Err(crate::Error::Other(format!("could not find hwmon named {dev_name}").into()))
 				},
 
-				Hwmon::Path(mut dev_path) => {
-					dev_path.push("hwmon");
-					if let Some(dir) = crate::std2::fs::read_dir(&dev_path)?.next() {
-						let dir = crate::std2::fs::canonicalize(&dir?.path())?;
-						if already_discovered_hwmon.insert(dir.clone()) {
-							Ok((hwmon_name, dir))
-						}
-						else {
-							Err(crate::Error::Other(format!("hwmon path {} was already found before", dir.display()).into()))
+				Hwmon::Path(dev_path) => {
+					for entry in crate::std2::fs::read_dir(&dev_path)? {
+						if let Ok(entry) = entry {
+							if let Ok(true) = entry.file_type().map(|ft| ft.is_dir()) {
+								let path = entry.path();
+								if path.file_name().map(|name| std::os::unix::ffi::OsStrExt::as_bytes(name).starts_with(b"hwmon")) == Some(true) {
+									let dir = crate::std2::fs::canonicalize(&path)?;
+									if already_discovered_hwmon.insert(dir.clone()) {
+										return Ok((hwmon_name, dir));
+									}
+									else {
+										return Err(crate::Error::Other(format!("hwmon path {} was already found before", dir.display()).into()));
+									}
+								}
+							}
 						}
 					}
-					else {
-						Err(crate::Error::Other(format!("could not find hwmon path under {}", dev_path.display()).into()))
-					}
+
+					Err(crate::Error::Other(format!("could not find hwmon path under {}", dev_path.display()).into()))
 				},
 			})
 			.collect();
