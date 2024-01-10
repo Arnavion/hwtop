@@ -15,7 +15,7 @@ networks = [
 soc = { dev_name = "nct1008" }
 
 
-# The battery of this device is not exposed as an hwmon device node, only as a power_supply device node..
+# The battery of this device is not exposed as an hwmon device node, only as a power_supply device node.
 #
 # Each entry here corresponds to a path under `/sys/class/power_supply`. The value is the name of the directory.
 [power_supply]
