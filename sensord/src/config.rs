@@ -56,48 +56,48 @@ impl<'de> serde::Deserialize<'de> for Config {
 		#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 		let interval = std::time::Duration::from_millis((interval * 1000.) as u64);
 
-		let mut already_discovered_hwmon: std::collections::BTreeSet<_> = Default::default();
+		let hwmon_nodes: Result<Vec<_>, crate::Error> =
+			crate::std2::fs::read_dir("/sys/class/hwmon".as_ref())
+			.map_err(serde::de::Error::custom)?
+			.filter_map(|dir| {
+				let dir = match dir {
+					Ok(dir) => dir,
+					Err(err) => return Some(Err(err)),
+				};
+				let dir = dir.path();
+
+				let name_file = dir.join("name");
+				let Ok(mut name) = std::fs::read_to_string(name_file) else { return None; };
+				if name.pop() != Some('\n') {
+					return None;
+				}
+
+				let dir = match crate::std2::fs::canonicalize(&dir) {
+					Ok(dir) => dir,
+					Err(err) => return Some(Err(err)),
+				};
+
+				Some(Ok((name, dir)))
+			})
+			.collect();
+		let mut hwmon_nodes = hwmon_nodes.map_err(serde::de::Error::custom)?;
+
 		let hwmon: Result<std::collections::BTreeMap<_, _>, crate::Error> =
 			hwmon.into_iter()
-			.map(|(hwmon_name, hwmon)| match hwmon {
-				Hwmon::Name(dev_name) => {
-					for dir in crate::std2::fs::read_dir("/sys/class/hwmon".as_ref())? {
-						let dir = dir?.path();
+			.map(|(hwmon_name, hwmon)| {
+				let i = match hwmon {
+					Hwmon::Name(dev_name) =>
+						hwmon_nodes.iter()
+						.position(|(hwmon_node_name, _)| *hwmon_node_name == dev_name)
+						.ok_or_else(|| crate::Error::Other(format!("could not find hwmon named {dev_name}").into()))?,
 
-						let name_file = dir.join("name");
-						let Ok(mut name) = std::fs::read_to_string(name_file) else { continue; };
-						if name.pop() != Some('\n') || name != dev_name {
-							continue;
-						}
-
-						let dir = crate::std2::fs::canonicalize(&dir)?;
-						if already_discovered_hwmon.insert(dir.clone()) {
-							return Ok((hwmon_name, dir));
-						}
-					}
-
-					Err(crate::Error::Other(format!("could not find hwmon named {dev_name}").into()))
-				},
-
-				Hwmon::Path(dev_path) => {
-					for entry in crate::std2::fs::read_dir(&dev_path)? {
-						let Ok(entry) = entry else { continue; };
-						let Ok(true) = entry.file_type().map(|ft| ft.is_dir()) else { continue; };
-
-						let path = entry.path();
-						let Some(true) = path.file_name().map(|name| std::os::unix::ffi::OsStrExt::as_bytes(name).starts_with(b"hwmon")) else { continue; };
-						let dir = crate::std2::fs::canonicalize(&path)?;
-
-						return if already_discovered_hwmon.insert(dir.clone()) {
-							Ok((hwmon_name, dir))
-						}
-						else {
-							Err(crate::Error::Other(format!("hwmon path {} was already found before", dir.display()).into()))
-						};
-					}
-
-					Err(crate::Error::Other(format!("could not find hwmon path under {}", dev_path.display()).into()))
-				},
+					Hwmon::Path(dev_path) =>
+						hwmon_nodes.iter()
+						.position(|(_, hwmon_node_dir)| hwmon_node_dir.starts_with(&dev_path))
+						.ok_or_else(|| crate::Error::Other(format!("could not find hwmon path under {}", dev_path.display()).into()))?,
+				};
+				let (_, hwmon_node_dir) = hwmon_nodes.swap_remove(i);
+				Ok((hwmon_name, hwmon_node_dir))
 			})
 			.collect();
 		let hwmon = hwmon.map_err(serde::de::Error::custom)?;
