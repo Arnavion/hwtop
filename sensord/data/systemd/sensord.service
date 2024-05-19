@@ -5,7 +5,7 @@ Description=Broadcasts CPU usage, thermal and fan sensors, and network usage inf
 [Service]
 Type=dbus
 BusName=dev.arnavion.sensord.Daemon
-ExecStart=/usr/local/bin/sensord
+ExecStart=/usr/bin/sensord
 User=sensord
 # dbus-daemon cannot be convinced to use a DynamicUser even if User is used to set its name to one that matches the dbus policy.
 # Ref: https://github.com/systemd/systemd/issues/9503

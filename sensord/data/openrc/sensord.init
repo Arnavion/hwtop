@@ -1,6 +1,6 @@
 #!/sbin/openrc-run
 
-command=/usr/local/bin/sensord
+command=/usr/bin/sensord
 command_args=
 command_user=sensord:sensord
 

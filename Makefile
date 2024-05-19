@@ -9,7 +9,7 @@ target/release/hwtop target/release/sensord &:
 	cargo build --release -p hwtop -p sensord
 
 install: target/release/hwtop target/release/sensord
-	cp -f target/release/hwtop target/release/sensord /usr/local/bin/
+	cp -f target/release/hwtop target/release/sensord /usr/bin/
 	if [ -d '/etc/systemd/system/' ]; then \
 		cp -f sensord/data/systemd/sensord.service /etc/systemd/system/; \
 		mkdir -p /etc/sysusers.d/; \

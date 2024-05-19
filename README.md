@@ -7,7 +7,7 @@ This repository contains:
 
 # Installation
 
-1. Build and install the `sensord` and `hwtop` binaries (to `/usr/local/bin`) and the `sensord` systemd service and D-Bus config files:
+1. Build and install the `sensord` and `hwtop` binaries (to `/usr/bin`) and the `sensord` systemd service and D-Bus config files:
 
    ```sh
    sudo make install
