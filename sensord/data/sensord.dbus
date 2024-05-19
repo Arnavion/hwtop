@@ -4,4 +4,7 @@
 	<policy user="sensord">
 		<allow own="dev.arnavion.sensord.Daemon" />
 	</policy>
+	<policy context="default">
+		<allow send_destination="dev.arnavion.sensord.Daemon" />
+	</policy>
 </busconfig>
