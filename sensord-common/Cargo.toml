@@ -12,3 +12,8 @@ dbus-pure-macros = { git = "https://github.com/Arnavion/dbus-pure", branch = "ma
 serde = { version = "1", default-features = false, features = [
 	"derive",
 ] }
+
+[package.metadata.cargo-machete]
+ignored = [
+	"dbus-pure", # used in expansion of dbus-pure-macros
+]
