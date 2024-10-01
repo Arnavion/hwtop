@@ -126,7 +126,7 @@ fn main() -> Result<(), Error> {
 		let terminal_width: usize = terminal::Terminal::width(&stdout)?;
 		let num_cpu_cols = terminal_width.saturating_sub(21) / 23 + 1;
 
-		let num_rows = (num_cpus + num_cpu_cols - 1) / num_cpu_cols;
+		let num_rows = num_cpus.div_ceil(num_cpu_cols);
 		for row in 0..num_rows {
 			for col in 0..num_cpu_cols {
 				if col > 0 {
