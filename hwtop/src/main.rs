@@ -257,7 +257,7 @@ fn print_temp_sensor<W>(mut writer: W, sensor: &sensord_common::TempSensor<'_>, 
 	let temp = sensor.value;
 
 	let color = match temp {
-		temp if temp == 0. => &b"0"[..],
+		0. => &b"0"[..],
 		temp if temp < 30. => &b"0;34"[..],
 		temp if temp < 35. => &b"1;34"[..],
 		temp if temp < 40. => &b"1;32"[..],
