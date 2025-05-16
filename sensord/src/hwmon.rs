@@ -118,7 +118,7 @@ impl Network {
 
 		unsafe {
 			let mut addrs = std::ptr::null_mut();
-			if libc::getifaddrs(&mut addrs) != 0 {
+			if libc::getifaddrs(&raw mut addrs) != 0 {
 				return Err(crate::Error::Other(std::io::Error::last_os_error().into()));
 			}
 
