@@ -11,7 +11,7 @@ pub(crate) fn num_cpus(sys_devices_system_cpu_present_line_regex: &regex::bytes:
 
 	for_each_line(path, buf, |line| {
 		let (_, [high]) = sys_devices_system_cpu_present_line_regex.captures(line).ok_or("could not parse /sys/devices/system/cpu/present")?.extract();
-		let high = std::str::from_utf8(high)?;
+		let high = str::from_utf8(high)?;
 		let high: usize = high.parse()?;
 		result = Some(high + 1);
 		Ok(true)
@@ -29,11 +29,11 @@ pub(crate) fn parse_proc_cpuinfo(cpus: &mut [(Cpu, f64)], proc_cpu_info_line_reg
 		}
 		else if let Some(captures) = proc_cpu_info_line_regex.captures(line) {
 			if let Some(id) = captures.name("id") {
-				let id = std::str::from_utf8(id.as_bytes())?;
+				let id = str::from_utf8(id.as_bytes())?;
 				current_id = Some(id.parse()?);
 			}
 			else if let Some(frequency) = captures.name("frequency") {
-				let frequency = std::str::from_utf8(frequency.as_bytes())?;
+				let frequency = str::from_utf8(frequency.as_bytes())?;
 				let id = current_id.ok_or("unexpected `cpu MHz` line without corresponding `processor` line")?;
 				cpus.get_mut(id).ok_or_else(|| format!("unexpected CPU ID {id}"))?.1 = frequency.parse()?;
 			}
@@ -58,7 +58,7 @@ pub(crate) fn parse_proc_stat(average_cpu: &mut Cpu, cpus: &mut [(Cpu, f64)], bu
 				None
 			}
 			else {
-				let id = std::str::from_utf8(id)?;
+				let id = str::from_utf8(id)?;
 				let id = id.parse()?;
 				Some(id)
 			};
@@ -74,7 +74,7 @@ pub(crate) fn parse_proc_stat(average_cpu: &mut Cpu, cpus: &mut [(Cpu, f64)], bu
 		let mut parts =
 			parts
 			.map(|part| -> Result<u64, Box<dyn std::error::Error>> {
-				let part = std::str::from_utf8(part)?;
+				let part = str::from_utf8(part)?;
 				let part = part.parse()?;
 				Ok(part)
 			})
@@ -264,7 +264,7 @@ fn parse_hwmon_raw<'a>(path: &std::path::Path, buf: &'a mut Vec<u8>) -> Result<O
 				buf
 			};
 
-		let value = std::str::from_utf8(buf)?;
+		let value = str::from_utf8(buf)?;
 
 		Ok(Some(value))
 	})
