@@ -34,6 +34,7 @@ fn main() -> Result<(), Error> {
 
 		move || {
 			loop {
+				#[expect(clippy::collapsible_match)]
 				match dbus_client.recv() {
 					Ok((header, body)) => match header.r#type {
 						dbus_pure::proto::MessageType::Signal { interface, member, path: _ } if interface == "dev.arnavion.sensord.Daemon" && member == "Sensors" => {
